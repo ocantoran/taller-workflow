@@ -88,7 +88,7 @@ Pasos generales:
 
 1. Ingresar al portal de prueba de Datadog.
 2. Capturar el correo que se utilizará para el taller.
-3. Seleccionar **Start your free trial** o **Get Started Free**.
+3. Seleccionar **Get Started Free**.
 4. Completar el formulario de registro.
 5. Seleccionar la región:
 
@@ -1210,4 +1210,3 @@ En esta sección se concentran las referencias oficiales utilizadas durante el t
 | Versión | Fecha | Descripción del cambio | Autor |
 |---|---|---|---|
 | 0.1 | `<AAAA-MM-DD>` | Creación inicial del manual técnico de taller. | `<Nombre del autor / equipo>` |
-
