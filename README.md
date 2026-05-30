@@ -434,3 +434,780 @@ Al finalizar esta sección, se debe confirmar que:
 | Site configurado | `datadoghq.com`. |
 
 Si el Agent no inicia o el host no aparece en Datadog, revisar la sección [13. Troubleshooting básico](#13-troubleshooting-básico).
+
+---
+
+## 6. Permisos y roles necesarios
+
+Antes de crear el monitor y el workflow, se debe validar que el usuario tenga permisos suficientes dentro de Datadog.
+
+Si la cuenta fue creada para el taller, normalmente el usuario tendrá permisos suficientes para continuar. Si se utiliza una cuenta compartida o una organización existente, se deben validar los permisos asignados mediante [RBAC](https://docs.datadoghq.com/account_management/rbac/).
+
+### 6.1 Validaciones mínimas
+
+El usuario debe poder acceder o realizar las siguientes acciones:
+
+| Elemento | Validación |
+|---|---|
+| **Infrastructure** | Consultar el host que reporta desde el Datadog Agent. |
+| **Integrations** | Consultar o modificar configuraciones necesarias del Agent o integraciones. |
+| **Monitors** | Crear o editar el monitor que detectará el servicio detenido. |
+| **Workflow Automation** | Crear, editar y ejecutar workflows. |
+| **Connections / credentials** | Configurar conexiones o credenciales si el workflow lo requiere. |
+
+![Validación de permisos en Datadog](./img/06-01-validacion-permisos-datadog.png)
+
+### 6.2 Validación rápida en la interfaz
+
+Desde Datadog, validar que se puede acceder a:
+
+1. **Infrastructure**.
+2. **Monitors**.
+3. **Workflow Automation**.
+4. **Organization Settings**, si se requiere revisar roles o API keys.
+
+![Acceso a secciones necesarias](./img/06-02-secciones-datadog.png)
+
+### 6.3 Consideraciones
+
+Si el usuario no puede crear monitores o workflows, se debe solicitar el ajuste de permisos correspondiente antes de continuar.
+
+Para ambientes con roles personalizados, se puede consultar la referencia de [Datadog Role Permissions](https://docs.datadoghq.com/account_management/rbac/permissions/).
+
+---
+
+## 7. Flujo general de la solución
+
+El flujo general del taller consiste en detectar un servicio detenido desde Datadog, generar una alerta mediante un monitor y ejecutar un workflow que coordine la validación y la acción de remediación controlada.
+
+La solución se compone de los siguientes elementos:
+
+| Componente | Función |
+|---|---|
+| **Datadog Agent** | Reporta información del host y del servicio monitoreado. |
+| **Service Check / Monitoreo del servicio** | Valida si el servicio está activo o detenido. |
+| **Monitor** | Genera una alerta cuando el servicio cumple la condición definida. |
+| **Workflow Automation** | Recibe el trigger del monitor y ejecuta las actions configuradas. |
+| **Sistema de ejecución autorizado** | Ejecuta la acción controlada sobre el host, cuando aplique. |
+| **Notificación / Registro** | Informa el resultado de la ejecución o registra evidencia del proceso. |
+
+### 7.1 Flujo operativo
+
+```text
+Datadog Agent reporta estado del servicio
+  ↓
+Datadog evalúa el estado mediante monitoreo
+  ↓
+Monitor detecta servicio detenido
+  ↓
+Monitor ejecuta el trigger del workflow
+  ↓
+Workflow valida el contexto recibido
+  ↓
+Workflow coordina la acción de remediación controlada
+  ↓
+Se valida el resultado
+  ↓
+Se notifica o registra la ejecución
+```
+
+![Flujo general de la solución](./img/07-01-flujo-general-solucion.png)
+
+### 7.2 Resultado esperado del flujo
+
+Al finalizar el flujo, se debe poder comprobar que:
+
+- El servicio detenido fue detectado por Datadog.
+- El monitor generó la alerta correspondiente.
+- El workflow se ejecutó a partir del trigger del monitor.
+- La acción de remediación o validación fue ejecutada de forma controlada.
+- El resultado quedó visible en la workflow execution o en la notificación configurada.
+
+> [!IMPORTANT]
+> Workflow Automation coordina el flujo de automatización. Si se requiere ejecutar una acción directamente sobre un servidor, debe existir un mecanismo autorizado para hacerlo, como una integración, connection, webhook, API o plataforma externa de automatización.
+
+---
+
+## 8. Monitoreo del servicio
+
+En esta sección se configurará el monitoreo del servicio seleccionado para el taller.  
+La configuración depende del sistema operativo del host de laboratorio.
+
+Selecciona la ruta correspondiente:
+
+| Sistema operativo | Ruta de configuración |
+|---|---|
+| Linux | [Ir a monitoreo en Linux](#81-monitoreo-en-linux) |
+| Windows | [Ir a monitoreo en Windows](#82-monitoreo-en-windows) |
+
+---
+
+### 8.1 Monitoreo en Linux
+
+Para Linux se utilizará la integración de [Systemd](https://docs.datadoghq.com/integrations/systemd/), la cual permite monitorear unidades administradas por `systemd`.
+
+Editar el archivo de configuración:
+
+```bash
+sudo vi /etc/datadog-agent/conf.d/systemd.d/conf.yaml
+```
+
+Agregar el servicio seleccionado:
+
+```yaml
+init_config:
+
+instances:
+  - unit_names:
+      - cups.service
+```
+
+> [!NOTE]
+> Reemplazar `cups.service` por el servicio seleccionado para el taller, por ejemplo `atd.service` o `avahi-daemon.service`.
+
+Reiniciar el Agent:
+
+```bash
+sudo systemctl restart datadog-agent
+```
+
+Validar el check:
+
+```bash
+sudo -u dd-agent datadog-agent check systemd
+```
+
+![Configuración de Systemd en Linux](./img/08-01-systemd-linux.png)
+
+---
+
+### 8.2 Monitoreo en Windows
+
+Para Windows se utilizará la integración de [Windows Services](https://docs.datadoghq.com/integrations/windows-service/), la cual permite monitorear el estado de servicios de Windows.
+
+Editar el archivo de configuración:
+
+```powershell
+notepad "C:\ProgramData\Datadog\conf.d\windows_service.d\conf.yaml"
+```
+
+Agregar el servicio seleccionado:
+
+```yaml
+init_config:
+
+instances:
+  - services:
+      - spooler
+```
+
+> [!NOTE]
+> Reemplazar `spooler` por el servicio seleccionado para el taller, por ejemplo `wsearch` o `fax`. Se debe utilizar el **service name**, no el display name.
+
+Reiniciar el Agent:
+
+```powershell
+Restart-Service datadogagent
+```
+
+Validar el check:
+
+```powershell
+& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" check windows_service
+```
+
+![Configuración de Windows Service](./img/08-02-windows-service.png)
+
+---
+
+### 8.3 Resultado esperado
+
+Al finalizar esta sección, Datadog debe recibir el estado del servicio monitoreado.
+
+| Sistema operativo | Check esperado |
+|---|---|
+| Linux | `systemd` |
+| Windows | `windows_service` |
+
+En la siguiente sección se creará el monitor que utilizará este estado para detectar cuando el servicio se encuentre detenido.
+
+---
+
+## 9. Creación del monitor
+
+En esta sección se creará el monitor que detectará cuando el servicio seleccionado se encuentre detenido.
+
+Para este taller se utilizará un monitor de tipo **Service Check**, ya que el estado del servicio será reportado por el Datadog Agent mediante la integración configurada en la sección anterior.
+
+Selecciona el check correspondiente según el sistema operativo:
+
+| Sistema operativo | Service Check |
+|---|---|
+| Linux | `systemd.unit.state` |
+| Windows | `windows_service.state` |
+
+---
+
+### 9.1 Crear monitor de Service Check
+
+Desde la consola de Datadog:
+
+1. Ir a **Monitors**.
+2. Seleccionar **New Monitor**.
+3. Seleccionar **Service Check**.
+4. Elegir el service check correspondiente:
+   - Linux: `systemd.unit.state`
+   - Windows: `windows_service.state`
+5. Definir el scope del monitor usando el host y el servicio seleccionado.
+6. Configurar la alerta para dispararse cuando el check reporte estado `CRITICAL`.
+7. Configurar la recuperación cuando el check vuelva a estado `OK`.
+8. Asignar nombre y mensaje al monitor.
+9. Guardar el monitor.
+
+![Creación del Service Check Monitor](./img/09-01-service-check-monitor.png)
+
+---
+
+### 9.2 Configuración sugerida
+
+| Campo | Valor sugerido |
+|---|---|
+| Tipo de monitor | `Service Check` |
+| Check Linux | `systemd.unit.state` |
+| Check Windows | `windows_service.state` |
+| Condición de alerta | `CRITICAL` |
+| Recuperación | `OK` |
+| Scope | Host y servicio de laboratorio |
+| Notificación | La requerida para el taller |
+
+> [!NOTE]
+> El scope exacto puede variar según los tags que genere el check. Durante el taller se debe validar en la interfaz que el monitor esté apuntando al host y servicio correctos.
+
+---
+
+### 9.3 Nombre sugerido del monitor
+
+```text
+[Workshop] Servicio detenido detectado - <HOST> - <SERVICIO>
+```
+
+Ejemplo:
+
+```text
+[Workshop] Servicio detenido detectado - lab-linux-01 - cups.service
+```
+
+---
+
+### 9.4 Mensaje sugerido del monitor
+
+```text
+Se detectó que el servicio monitoreado se encuentra detenido.
+
+Host: {{host.name}}
+Estado del monitor: {{value}}
+
+Este monitor forma parte del taller de Datadog Workflow Automation.
+```
+
+> [!IMPORTANT]
+> En este punto el monitor solo detecta la condición de falla. La asociación con el workflow se realizará en la sección [11. Asociación del monitor con el workflow](#11-asociación-del-monitor-con-el-workflow).
+
+---
+
+## 10. Creación del workflow
+
+En esta sección se creará el workflow que será ejecutado cuando el monitor detecte el servicio detenido.
+
+El workflow recibirá el contexto del monitor, validará la información básica del evento y ejecutará una action de remediación controlada mediante un mecanismo autorizado.
+
+> [!IMPORTANT]
+> Workflow Automation coordina la automatización, pero no debe entenderse como un agente remoto para ejecutar comandos directamente sobre el servidor. Para iniciar un servicio en el host se requiere una integración, webhook, API o plataforma externa autorizada.
+
+### 10.1 Crear workflow
+
+Desde la consola de Datadog:
+
+1. Ir a **Workflow Automation**.
+2. Seleccionar **New Workflow**.
+3. Asignar un nombre al workflow.
+
+Nombre sugerido:
+
+```text
+[Workshop] Remediación de servicio detenido
+```
+
+![Creación del workflow](./img/10-01-crear-workflow.png)
+
+---
+
+### 10.2 Agregar trigger del monitor
+
+Agregar un trigger de tipo **Monitor** para que el workflow pueda ejecutarse desde el monitor creado en la sección anterior.
+
+Pasos generales:
+
+1. Agregar un nuevo trigger.
+2. Seleccionar **Monitor Trigger**.
+3. Guardar el workflow.
+4. Validar el nombre o handle del workflow, ya que se utilizará al asociarlo con el monitor.
+
+![Monitor Trigger en Workflow Automation](./img/10-02-monitor-trigger.png)
+
+> [!NOTE]
+> La asociación final entre el monitor y el workflow se realizará en la sección [11. Asociación del monitor con el workflow](#11-asociación-del-monitor-con-el-workflow).
+
+---
+
+### 10.3 Definir información mínima del evento
+
+El workflow debe recibir información suficiente para saber qué servicio atender y en qué host ocurrió la alerta.
+
+Datos mínimos esperados:
+
+| Dato | Descripción |
+|---|---|
+| `host` | Host donde se detectó el servicio detenido. |
+| `service` | Servicio monitoreado. |
+| `status` | Estado reportado por el monitor. |
+| `message` | Mensaje o contexto del evento. |
+
+![Variables del workflow](./img/10-03-variables-workflow.png)
+
+---
+
+### 10.4 Agregar validación básica
+
+Agregar una condición para validar que el evento contiene los datos mínimos necesarios.
+
+Validación sugerida:
+
+```text
+¿El evento contiene host y servicio?
+```
+
+Resultado esperado:
+
+| Condición | Acción |
+|---|---|
+| Sí | Continuar con la remediación controlada. |
+| No | Registrar error y finalizar sin ejecutar remediación. |
+
+![Condición de validación](./img/10-04-validacion-contexto.png)
+
+---
+
+### 10.5 Agregar action de remediación controlada
+
+Agregar la action que enviará la solicitud de remediación al sistema autorizado.
+
+Para el taller puede utilizarse una **HTTP action** hacia un webhook o API interna.
+
+Ejemplo conceptual:
+
+```text
+POST <URL_WEBHOOK_REMEDIACION>
+```
+
+Body de referencia:
+
+```json
+{
+  "host": "<HOST>",
+  "service": "<SERVICIO>",
+  "action": "start_service",
+  "source": "datadog_workflow_automation"
+}
+```
+
+![HTTP action de remediación](./img/10-05-http-action-remediacion.png)
+
+> [!WARNING]
+> La URL, tokens o credenciales utilizadas por la action no deben guardarse directamente en el repositorio. Se deben utilizar connections, credenciales protegidas o placeholders como `<URL_WEBHOOK_REMEDIACION>`.
+
+---
+
+### 10.6 Registrar o notificar resultado
+
+Agregar una action final para registrar o notificar el resultado de la ejecución.
+
+Ejemplos:
+
+- Notificar recuperación exitosa.
+- Notificar fallo de remediación.
+- Registrar evidencia de la ejecución.
+- Escalar el evento si la remediación no fue exitosa.
+
+![Resultado del workflow](./img/10-06-resultado-workflow.png)
+
+---
+
+### 10.7 Resultado esperado
+
+Al finalizar esta sección, se debe contar con un workflow que tenga:
+
+| Elemento | Estado esperado |
+|---|---|
+| Nombre del workflow | Definido. |
+| Monitor trigger | Configurado. |
+| Validación básica | Configurada. |
+| Action de remediación | Configurada o preparada con placeholder. |
+| Notificación o registro | Configurado. |
+
+El workflow quedará listo para asociarse al monitor en la siguiente sección.
+
+---
+
+## 11. Asociación del monitor con el workflow
+
+En esta sección se asociará el monitor creado previamente con el workflow de remediación.
+
+Antes de continuar, validar que:
+
+- El monitor ya existe.
+- El workflow ya tiene un **Monitor trigger**.
+- El workflow fue guardado y publicado.
+- El workflow cuenta con las variables o inputs necesarios para recibir información del monitor.
+
+### 11.1 Agregar workflow al monitor
+
+Desde la consola de Datadog:
+
+1. Ir a **Monitors**.
+2. Editar el monitor creado en la sección [9. Creación del monitor](#9-creación-del-monitor).
+3. Ir a **Configure notifications & automations**.
+4. Seleccionar **Add Workflow**.
+5. Buscar y seleccionar el workflow creado en la sección [10. Creación del workflow](#10-creación-del-workflow).
+6. Configurar los inputs requeridos, si aplica.
+7. Guardar el monitor.
+
+![Asociación del monitor con el workflow](./img/11-01-asociar-monitor-workflow.png)
+
+### 11.2 Parámetros sugeridos
+
+Si el workflow requiere datos del monitor, se pueden pasar variables como referencia.
+
+Ejemplo conceptual:
+
+```text
+host={{host.name}}
+service=<SERVICIO_DEL_TALLER>
+status={{value}}
+```
+
+> [!NOTE]
+> Las variables exactas disponibles pueden variar según el tipo de monitor. Durante el taller se deben validar desde la opción de variables disponibles en la configuración del monitor.
+
+### 11.3 Resultado esperado
+
+Al finalizar esta sección:
+
+- El monitor debe tener asociado el workflow.
+- El workflow debe ejecutarse cuando el monitor entre en condición de alerta.
+- El monitor debe conservar su mensaje de alerta y, adicionalmente, la referencia al workflow.
+
+> [!IMPORTANT]
+> Cada vez que el monitor dispare el workflow publicado, se generará una workflow execution. Esto debe considerarse para evitar ejecuciones innecesarias durante las pruebas.
+
+---
+
+## 12. Validación de la remediación
+
+En esta sección se validará el flujo completo: detener el servicio de prueba, esperar la alerta del monitor, confirmar la ejecución del workflow y revisar el resultado de la remediación controlada.
+
+> [!IMPORTANT]
+> La prueba debe realizarse únicamente sobre el servicio de bajo impacto seleccionado para el taller.
+
+### 12.1 Detener el servicio de prueba
+
+Selecciona la ruta correspondiente:
+
+| Sistema operativo | Ruta de validación |
+|---|---|
+| Linux | [Ir a prueba en Linux](#1211-prueba-en-linux) |
+| Windows | [Ir a prueba en Windows](#1212-prueba-en-windows) |
+
+#### 12.1.1 Prueba en Linux
+
+Detener el servicio seleccionado:
+
+```bash
+sudo systemctl stop cups.service
+```
+
+Validar que el servicio quedó detenido:
+
+```bash
+systemctl status cups.service
+```
+
+> [!NOTE]
+> Reemplazar `cups.service` por el servicio seleccionado para el taller.
+
+![Servicio detenido en Linux](./img/12-01-servicio-detenido-linux.png)
+
+#### 12.1.2 Prueba en Windows
+
+Detener el servicio seleccionado:
+
+```powershell
+Stop-Service -Name Spooler
+```
+
+Validar que el servicio quedó detenido:
+
+```powershell
+Get-Service -Name Spooler
+```
+
+> [!NOTE]
+> Reemplazar `Spooler` por el servicio seleccionado para el taller.
+
+![Servicio detenido en Windows](./img/12-02-servicio-detenido-windows.png)
+
+---
+
+### 12.2 Validar alerta del monitor
+
+Después de detener el servicio, esperar a que Datadog reciba el nuevo estado y el monitor cambie a condición de alerta.
+
+Desde Datadog:
+
+1. Ir a **Monitors**.
+2. Abrir el monitor creado para el taller.
+3. Validar que el monitor cambió a estado de alerta.
+4. Confirmar que el host y servicio corresponden a la prueba.
+
+![Monitor en alerta](./img/12-03-monitor-alerta.png)
+
+> [!NOTE]
+> El cambio de estado puede tardar algunos minutos, dependiendo del intervalo de recolección del Agent y de la configuración del monitor.
+
+---
+
+### 12.3 Validar ejecución del workflow
+
+Una vez que el monitor entra en alerta, se debe validar que el workflow asociado se ejecutó.
+
+Desde Datadog:
+
+1. Ir a **Workflow Automation**.
+2. Abrir el workflow creado para el taller.
+3. Revisar el historial de ejecuciones.
+4. Abrir la última **workflow execution**.
+5. Validar si las actions se ejecutaron correctamente.
+
+![Workflow execution](./img/12-04-workflow-execution.png)
+
+Resultado esperado:
+
+| Validación | Resultado esperado |
+|---|---|
+| Trigger del monitor | Ejecutó el workflow. |
+| Datos recibidos | Incluyen host, servicio y estado del evento. |
+| Validación básica | Finalizó correctamente. |
+| Action de remediación | Se ejecutó mediante el mecanismo autorizado. |
+| Resultado final | Quedó registrado en la workflow execution. |
+
+---
+
+### 12.4 Validar estado final del servicio
+
+Después de la ejecución del workflow, validar si el servicio fue iniciado nuevamente.
+
+#### Linux
+
+```bash
+systemctl status cups.service
+```
+
+#### Windows PowerShell
+
+```powershell
+Get-Service -Name Spooler
+```
+
+![Servicio recuperado](./img/12-05-servicio-recuperado.png)
+
+---
+
+### 12.5 Resultado esperado
+
+Al finalizar la validación, se debe comprobar que:
+
+- El servicio detenido fue detectado por Datadog.
+- El monitor cambió a estado de alerta.
+- El workflow asociado fue ejecutado.
+- La remediación controlada fue invocada.
+- El resultado quedó registrado en la workflow execution.
+- El servicio quedó activo nuevamente o el evento fue escalado correctamente.
+
+> [!WARNING]
+> Si el servicio no se recupera, no se debe repetir la prueba de forma indefinida. Primero se debe revisar el resultado de la workflow execution, los logs del Agent y el mecanismo autorizado utilizado para ejecutar la remediación.
+
+---
+
+## 13. Troubleshooting básico
+
+Esta sección contiene validaciones básicas para identificar problemas comunes durante el taller.
+
+### 13.1 El Agent no inicia
+
+Validar el estado del servicio.
+
+#### Linux
+
+```bash
+sudo systemctl status datadog-agent
+sudo journalctl -u datadog-agent -n 50 --no-pager
+```
+
+#### Windows PowerShell
+
+```powershell
+Get-Service datadogagent
+```
+
+Si el servicio no inicia, revisar que el archivo `datadog.yaml` tenga los valores correctos:
+
+```yaml
+api_key: <API_KEY_DEL_TALLER>
+site: datadoghq.com
+```
+
+![Troubleshooting del Agent](./img/13-01-agent-no-inicia.png)
+
+---
+
+### 13.2 El host no aparece en Datadog
+
+Validar que el Agent esté en ejecución y que no existan errores de conexión o autenticación.
+
+#### Linux
+
+```bash
+sudo datadog-agent status
+```
+
+#### Windows PowerShell
+
+```powershell
+& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status
+```
+
+Puntos a revisar:
+
+- API key correcta.
+- Site configurado como `datadoghq.com`.
+- Conectividad del host hacia Datadog.
+- Firewall, proxy o restricciones de red.
+- Tiempo de espera después de instalar o reiniciar el Agent.
+
+![Host no visible en Datadog](./img/13-02-host-no-visible.png)
+
+---
+
+### 13.3 El servicio no reporta estado
+
+Validar que la integración del servicio esté configurada correctamente.
+
+#### Linux
+
+```bash
+sudo -u dd-agent datadog-agent check systemd
+```
+
+#### Windows PowerShell
+
+```powershell
+& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" check windows_service
+```
+
+Puntos a revisar:
+
+- El servicio existe en el sistema operativo.
+- El nombre del servicio está escrito correctamente.
+- El archivo `conf.yaml` tiene sintaxis válida.
+- El Agent fue reiniciado después del cambio.
+
+![Check del servicio](./img/13-03-check-servicio.png)
+
+---
+
+### 13.4 El monitor no cambia a alerta
+
+Si el servicio ya fue detenido pero el monitor no cambia de estado, revisar:
+
+- Que el check correcto esté asociado al monitor.
+- Que el scope apunte al host y servicio correctos.
+- Que el Agent esté enviando datos recientes.
+- Que haya pasado el tiempo suficiente para que Datadog evalúe la condición.
+
+![Monitor sin alerta](./img/13-04-monitor-sin-alerta.png)
+
+
+
+### 13.5 El workflow no se ejecuta
+
+Si el monitor entra en alerta pero el workflow no se ejecuta, validar:
+
+- Que el workflow esté publicado.
+- Que el workflow tenga configurado un **Monitor trigger**.
+- Que el monitor tenga asociado el workflow en **Configure notifications & automations**.
+- Que los inputs requeridos por el workflow estén configurados.
+
+![Workflow no ejecutado](./img/13-05-workflow-no-ejecutado.png)
+
+
+### 13.6 La remediación no funciona
+
+Si el workflow se ejecuta pero el servicio no se inicia nuevamente, revisar:
+
+- El resultado de la **workflow execution**.
+- La respuesta de la action de remediación.
+- Las credenciales o connection utilizadas.
+- El mecanismo externo usado para ejecutar la acción.
+- Los permisos sobre el host o servicio objetivo.
+
+> [!IMPORTANT]
+> Workflow Automation coordina la acción, pero la ejecución sobre el servidor depende del mecanismo autorizado utilizado, como webhook, API, integración o plataforma externa de automatización.
+
+![Fallo de remediación](./img/13-06-fallo-remediacion.png)
+
+---
+
+## 14. Referencias oficiales
+
+En esta sección se concentran las referencias oficiales utilizadas durante el taller.
+
+| Tema | Referencia |
+|---|---|
+| Cuenta de prueba | [Datadog Free Trial](https://www.datadoghq.com/free-datadog-trial/) |
+| Primeros pasos en Datadog | [Getting Started with Datadog](https://docs.datadoghq.com/getting_started/) |
+| Sitios de Datadog | [Datadog Sites](https://docs.datadoghq.com/getting_started/site/) |
+| API keys y Application keys | [API and Application Keys](https://docs.datadoghq.com/account_management/api-app-keys/) |
+| Instalación del Agent en Linux | [Datadog Agent para Linux](https://docs.datadoghq.com/agent/supported_platforms/linux/) |
+| Instalación del Agent en Windows | [Datadog Agent para Windows](https://docs.datadoghq.com/agent/supported_platforms/windows/) |
+| Comandos del Agent | [Agent Commands](https://docs.datadoghq.com/agent/configuration/agent-commands/) |
+| Archivos de configuración del Agent | [Agent Configuration Files](https://docs.datadoghq.com/agent/configuration/agent-configuration-files/) |
+| Integración Systemd | [Systemd Integration](https://docs.datadoghq.com/integrations/systemd/) |
+| Integración Windows Service | [Windows Service Integration](https://docs.datadoghq.com/integrations/windows-service/) |
+| Monitores en Datadog | [Monitors](https://docs.datadoghq.com/monitors/) |
+| Service Check Monitor | [Service Check Monitor](https://docs.datadoghq.com/monitors/types/service_check/) |
+| Workflow Automation | [Datadog Workflow Automation](https://docs.datadoghq.com/actions/workflows/) |
+| Triggers de workflows | [Trigger a Workflow](https://docs.datadoghq.com/actions/workflows/trigger/) |
+| Actions en workflows | [Workflow Actions](https://docs.datadoghq.com/actions/workflows/actions/) |
+| Connections | [Connections](https://docs.datadoghq.com/actions/connections/) |
+| RBAC | [Role Based Access Control](https://docs.datadoghq.com/account_management/rbac/) |
+| Permisos de roles | [Datadog Role Permissions](https://docs.datadoghq.com/account_management/rbac/permissions/) |
+```‍```
+
+---
+
+## 15. Bitácora de cambios
+
+| Versión | Fecha | Descripción del cambio | Autor |
+|---|---|---|---|
+| 0.1 | `<AAAA-MM-DD>` | Creación inicial del manual técnico de taller. | `<Nombre del autor / equipo>` |
+
