@@ -240,10 +240,6 @@ Si la workstation aún no tiene Datadog Agent instalado, la instalación se real
 
 Si la workstation ya tiene Datadog Agent instalado, se validará durante el taller si puede reutilizarse o si es necesario ajustar su configuración.
 
-> [!IMPORTANT]
-> Si la workstation pertenece a una organización y ya tiene Datadog Agent configurado, no se debe cambiar la API key sin autorización. Cambiarla puede hacer que el equipo deje de reportar a otra cuenta de Datadog y comience a reportar a la cuenta utilizada en el taller.
-
-
 ---
 
 ## 4. Instalación del Datadog Agent
