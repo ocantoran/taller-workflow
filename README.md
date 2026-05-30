@@ -87,50 +87,72 @@ Para realizar el taller se requiere una cuenta de Datadog. Si aún no se cuenta 
 Pasos generales:
 
 1. Ingresar al portal de prueba de Datadog.
-2. Capturar el correo que se utilizará para el taller.
+
+   ![Portal de prueba de Datadog](./img/03-01-datadog-free-trial.png)
+
+2. En el campo **Enter your business email**, capturar el correo que se utilizará para el taller.
+
+   ![Captura de correo para iniciar el trial](./img/03-02-captura-correo-trial.png)
+
 3. Seleccionar **Get Started Free**.
-4. Completar el formulario de registro.
-5. Seleccionar la región:
+
+4. En el formulario de registro, seleccionar la región:
 
    ```text
    United States (US1-East)
    ```
 
-6. Crear la contraseña y completar los datos solicitados.
-7. Confirmar el correo electrónico si la plataforma lo solicita.
-8. Iniciar sesión y validar acceso a la consola de Datadog.
+   Esta selección es importante porque define el sitio de Datadog que se utilizará más adelante para configurar el Agent.
 
-![Portal de prueba de Datadog](./img/03-01-datadog-free-trial.png)
+   Para este taller, la región **United States (US1-East)** corresponde al siguiente valor de configuración:
 
-![Formulario de registro](./img/03-02-formulario-registro.png)
+   ```yaml
+   site: datadoghq.com
+   ```
 
-![Selección de región US1-East](./img/03-03-seleccion-region-us1-east.png)
+5. Crear una contraseña para la cuenta.
 
-> [!IMPORTANT]
-> Para este taller se utilizará la región **United States (US1-East)**. Esta región corresponde al valor `site: datadoghq.com`, que se usará durante la instalación o configuración del Datadog Agent.
+6. Capturar nombre y apellido.
 
-> [!WARNING]
-> No se recomienda utilizar correos temporales. Si se pierde acceso al correo utilizado, puede ser más difícil recuperar la cuenta o continuar con actividades posteriores.
+   ![Formulario inicial de registro](./img/03-03-formulario-inicial-registro.png)
 
----
+7. Completar los datos adicionales solicitados por el formulario.
 
-### 3.2 Obtener API key
+   | Campo | Valor sugerido para el taller |
+   |---|---|
+   | Job Title | `Sysadmin`, `DevOps`, `SRE` o rol equivalente |
+   | Company | Nombre de la empresa o un valor de laboratorio, por ejemplo `Test` |
+   | Phone Number | Número de contacto, **ESTE VALOR ES OPCIONAL** |
 
-La API key será necesaria para instalar o configurar el Datadog Agent. Esta llave permite que el Agent envíe información desde el host hacia la cuenta de Datadog utilizada en el taller.
+   ![Datos adicionales del registro](./img/03-05-datos-adicionales-registro.png)
 
-Pasos generales:
+8. Seleccionar **Create Account**.
 
-1. Iniciar sesión en Datadog.
-2. Ir a **Organization Settings**.
-3. Entrar a **API Keys**.
-4. Crear una nueva API key o utilizar una API key existente autorizada.
-5. Guardar la API key de forma segura.
+9. Confirmar el correo electrónico mediante el código de verificación enviado por Datadog.
 
-La gestión de llaves puede consultarse en la documentación de [API and Application Keys](https://docs.datadoghq.com/account_management/api-app-keys/).
+   ![Confirmación de correo Datadog](./img/03-06-confirmacion-correo-datadog.png)
 
-![Sección API Keys](./img/03-04-api-keys.png)
+10. Después de confirmar el correo, Datadog puede mostrar una pantalla inicial de onboarding con la pregunta:
 
-Datos que deben conservarse para el taller:
+   ```text
+   What would you like to monitor first?
+   ```
+
+   ![Pantalla inicial de onboarding Datadog](./img/03-07-onboarding-inicial-datadog.png)
+
+12. Para este taller, no es necesario seleccionar una opción en esa pantalla. En su lugar, abrir directamente la consola principal de Datadog desde la siguiente URL:
+
+   ```text
+   https://app.datadoghq.com/
+   ```
+
+   Esto permite entrar a la cuenta ya creada sin continuar con el asistente inicial de onboarding.
+
+13. Validar que se puede acceder correctamente a la consola de Datadog con la cuenta creada.
+
+   ![Consola principal de Datadog](./img/03-08-consola-principal-datadog.png)
+
+14. Guardar los datos básicos que se utilizarán durante el taller.
 
 | Dato | Valor |
 |---|---|
@@ -139,103 +161,88 @@ Datos que deben conservarse para el taller:
 | Site del Agent | `datadoghq.com` |
 | API key | `<API_KEY_DEL_TALLER>` |
 
+> [!NOTE]
+> La pantalla de onboarding inicial no representa un error. Datadog la muestra para guiar la primera instalación o configuración. Para este taller, la instalación del Agent se realizará de forma controlada en la sección [4. Instalación del Datadog Agent](#4-instalación-del-datadog-agent), por lo que se recomienda acceder directamente a la consola principal mediante `https://app.datadoghq.com/`.
+
+> [!IMPORTANT]
+> Para este taller se utilizará la región **United States (US1-East)**. Esta región corresponde al valor `site: datadoghq.com`, que se usará durante la instalación o configuración del Datadog Agent.
+
+> [!WARNING]
+> No se recomienda utilizar correos temporales para el taller. Si se pierde acceso al correo utilizado, puede ser más difícil recuperar la cuenta o continuar con actividades posteriores.
+
+### 3.2 Obtener API key
+
+La API key será necesaria para instalar o configurar el Datadog Agent. Esta llave permite que el Agent envíe información desde el host hacia la cuenta de Datadog utilizada en el taller.
+
+Para ubicar rápidamente la sección de API keys dentro de Datadog, se puede utilizar el buscador de la plataforma:
+
+```text
+Ctrl + K
+```
+
+En el buscador, escribir:
+
+```text
+API Keys
+```
+
+Pasos generales:
+
+1. Iniciar sesión en Datadog.
+2. Presionar `Ctrl + K`.
+3. Buscar **API Keys**.
+4. Entrar a la sección de API keys.
+5. Crear una nueva API key o utilizar una API key existente autorizada.
+6. Guardar la API key de forma segura.
+
+![Búsqueda de API Keys con Ctrl K](./img/03-09-busqueda-api-keys.png)
+
 > [!IMPORTANT]
 > La API key debe tratarse como información sensible. No debe compartirse en repositorios públicos, capturas de pantalla, chats abiertos o documentación sin protección.
 
----
+### 3.3 Preparar workstation para el taller
 
-### 3.3 Preparar host para el taller
+Para el taller, cada participante utilizará su propia workstation Linux o Windows para instalar o reutilizar el Datadog Agent.
 
-Se requiere un host Linux o Windows para instalar o reutilizar el Datadog Agent.
+Antes de continuar, se deben validar los siguientes puntos:
 
-Primero se debe validar si el Agent ya está instalado.
-
-#### Linux
-
-```bash
-sudo systemctl status datadog-agent
-sudo datadog-agent status
-```
-
-#### Windows PowerShell
-
-```powershell
-Get-Service datadogagent
-& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status
-```
-
-Si el Agent no está instalado, se instalará en la sección [4. Instalación del Datadog Agent](#4-instalación-del-datadog-agent).
-
-Si el Agent ya está instalado, se debe validar que apunte al site y API key del taller.
-
-Valor esperado:
-
-```yaml
-site: datadoghq.com
-api_key: <API_KEY_DEL_TALLER>
-```
-
-Archivos de configuración comunes:
-
-| Sistema operativo | Archivo |
+| Requisito | Descripción |
 |---|---|
-| Linux | `/etc/datadog-agent/datadog.yaml` |
-| Windows | `C:\ProgramData\Datadog\datadog.yaml` |
+| Sistema operativo | Contar con una workstation Linux o Windows. |
+| Permisos locales | Tener permisos suficientes para instalar software, modificar configuraciones y reiniciar servicios. |
+| Acceso a internet | Contar con salida a internet para acceder a Datadog y descargar el Datadog Agent. |
+| Acceso a Datadog | Poder iniciar sesión en `https://app.datadoghq.com/`. |
+| API key | Tener disponible la API key generada en la sección anterior. |
+| Site | Para este taller se utilizará `datadoghq.com`. |
+| Terminal disponible | Contar con terminal Linux o PowerShell en Windows para ejecutar comandos de validación. |
 
-Después de modificar el archivo, se debe reiniciar el Agent.
+Validar acceso a la consola de Datadog:
+
+```text
+https://app.datadoghq.com/
+```
+
+Validar salida a internet desde la workstation:
 
 #### Linux
 
 ```bash
-sudo systemctl restart datadog-agent
-sudo systemctl status datadog-agent
+curl -I https://app.datadoghq.com/
 ```
 
 #### Windows PowerShell
 
 ```powershell
-Restart-Service datadogagent
-Get-Service datadogagent
+Invoke-WebRequest -Uri "https://app.datadoghq.com/" -UseBasicParsing
 ```
 
-![Validación del Agent](./img/03-05-validacion-agent.png)
+Si la workstation aún no tiene Datadog Agent instalado, la instalación se realizará en la sección [4. Instalación del Datadog Agent](#4-instalación-del-datadog-agent).
 
-> [!WARNING]
-> Cambiar la API key de un Agent existente puede hacer que el host deje de reportar a otra cuenta de Datadog y comience a reportar a la cuenta utilizada en el taller. Antes de realizar este cambio, se debe confirmar que está autorizado.
+Si la workstation ya tiene Datadog Agent instalado, se validará durante el taller si puede reutilizarse o si es necesario ajustar su configuración.
 
----
+> [!IMPORTANT]
+> Si la workstation pertenece a una organización y ya tiene Datadog Agent configurado, no se debe cambiar la API key sin autorización. Cambiarla puede hacer que el equipo deje de reportar a otra cuenta de Datadog y comience a reportar a la cuenta utilizada en el taller.
 
-### 3.4 Seleccionar servicio de prueba
-
-Para validar el monitoreo y la remediación, se debe elegir un servicio de bajo impacto. El objetivo es simular un servicio detenido sin afectar una aplicación crítica o un componente esencial del sistema operativo.
-
-Servicios sugeridos:
-
-| Sistema operativo | Servicios sugeridos |
-|---|---|
-| Linux | `cups.service`, `atd.service`, `avahi-daemon.service` |
-| Windows | `Spooler`, `WSearch`, `Fax` |
-
-Antes de seleccionarlo, se debe validar que el servicio exista y que pueda detenerse e iniciarse sin impacto relevante.
-
-#### Linux
-
-```bash
-systemctl status cups.service
-systemctl status atd.service
-systemctl status avahi-daemon.service
-```
-
-#### Windows PowerShell
-
-```powershell
-Get-Service -Name Spooler
-Get-Service -Name WSearch
-Get-Service -Name Fax
-```
-
-> [!CAUTION]
-> No se deben utilizar servicios críticos para la prueba inicial.
 
 ---
 
