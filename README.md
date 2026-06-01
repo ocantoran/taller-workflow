@@ -2060,17 +2060,18 @@ Get-Service -Name <SERVICIO_WINDOWS>
 > [!WARNING]
 > No repetir la prueba de forma indefinida si la remediación falla. Primero se debe revisar la ejecución del workflow, el estado del Private Action Runner y los logs del Agent.
 
-
 ---
 
-
 ## 13. Desinstalación y limpieza
+
+| Sistema operativo | Sección |
+|---|---|
+| Windows | [Ir a limpieza en Windows](#132-limpieza-en-windows) |
+| Linux | [Ir a limpieza en Linux](#133-limpieza-en-linux) |
 
 Esta sección aplica cuando se desea retirar la configuración del taller de la workstation.
 
 Antes de desinstalar el Agent, validar si durante la prueba se agregaron permisos o archivos auxiliares.
-
----
 
 ### 13.1 Consideraciones previas
 
@@ -2084,8 +2085,6 @@ Antes de limpiar la workstation:
 
 4. Si se crearon archivos de configuración de scripts, eliminarlos únicamente si ya no serán reutilizados.
 
----
-
 ### 13.2 Limpieza en Windows
 
 #### 13.2.1 Detener el Datadog Agent
@@ -2095,8 +2094,6 @@ Ejecutar PowerShell como administrador:
 ```powershell
 Stop-Service -Name datadogagent -Force
 ```
-
----
 
 #### 13.2.2 Remover permisos del servicio en Windows
 
@@ -2122,8 +2119,6 @@ sc.exe sdshow Spooler
 
 Si no existe respaldo del descriptor original, no aplicar cambios manuales sin validación previa del administrador del sistema.
 
----
-
 #### 13.2.3 Desinstalar el Datadog Agent en Windows
 
 La desinstalación puede realizarse desde la interfaz de Windows:
@@ -2145,8 +2140,6 @@ La guía oficial de desinstalación para Windows indica que este proceso no elim
 Referencia oficial:
 - [Datadog Agent para Windows](https://docs.datadoghq.com/agent/supported_platforms/windows/)
 
----
-
 #### 13.2.4 Limpieza opcional de archivos en Windows
 
 Después de desinstalar el Agent, si ya no se requiere conservar configuración, logs o respaldos del taller, se puede eliminar la carpeta de datos.
@@ -2159,8 +2152,6 @@ Remove-Item "C:\ProgramData\Datadog" -Recurse -Force
 
 No ejecutar este paso si se requiere conservar evidencia, logs o archivos de configuración del taller.
 
----
-
 ### 13.3 Limpieza en Linux
 
 #### 13.3.1 Detener el Datadog Agent
@@ -2168,8 +2159,6 @@ No ejecutar este paso si se requiere conservar evidencia, logs o archivos de con
 ```bash
 sudo systemctl stop datadog-agent
 ```
-
----
 
 #### 13.3.2 Remover permisos sudo del taller
 
@@ -2184,8 +2173,6 @@ Validar que el archivo ya no exista:
 ```bash
 sudo ls -l /etc/sudoers.d/dd-agent-workshop
 ```
-
----
 
 #### 13.3.3 Desinstalar el Datadog Agent en Linux
 
@@ -2211,8 +2198,6 @@ sudo zypper remove datadog-agent
 
 Referencia oficial:
 - [Datadog Agent para Linux](https://docs.datadoghq.com/agent/supported_platforms/linux/)
-
----
 
 #### 13.3.4 Limpieza opcional de archivos en Linux
 
