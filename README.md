@@ -28,7 +28,8 @@
 - [10. Asociación del monitor con el workflow](#10-asociación-del-monitor-con-el-workflow)
 - [11. Validación de la remediación](#11-validación-de-la-remediación)
 - [12. Troubleshooting básico](#12-troubleshooting-básico)
-- [13. Bitácora de cambios](#13-bitácora-de-cambios)
+- [13. Desinstalación y limpieza](#13-desinstalación-y-limpieza)
+- [14. Bitácora de cambios](#14-bitácora-de-cambios)
 
 ---
 
@@ -1170,6 +1171,46 @@ La connection de tipo **Script** debe conservarse, porque será utilizada por la
 
 También puede ocurrir que el runner aparezca como `Inactive` en la vista de detalle. Para este taller, la validación funcional se confirmará cuando el workflow ejecute correctamente la action de PowerShell.
 
+#### Permisos para ejecución del script en Windows
+
+En Windows, el script será ejecutado por el usuario del Datadog Agent, normalmente `ddagentuser`.
+
+Si la remediación requiere iniciar o reiniciar un servicio, se debe otorgar permiso sobre el servicio seleccionado para el taller.
+
+Para esta prueba se otorgarán permisos únicamente sobre el servicio definido en la variable `$ServiceName`.
+
+```powershell
+$ServiceName = "Spooler"
+$AgentUser = "$env:COMPUTERNAME\ddagentuser"
+$BackupPath = "C:\ProgramData\Datadog\workshop-service-sddl-$ServiceName.txt"
+
+$sid = (New-Object System.Security.Principal.NTAccount($AgentUser)).Translate([System.Security.Principal.SecurityIdentifier]).Value
+$currentSd = sc.exe sdshow $ServiceName | Where-Object { $_ -match '^D:' }
+
+$currentSd | Out-File -FilePath $BackupPath -Encoding ascii -Force
+
+$ace = "(A;;LCRPWPLO;;;$sid)"
+
+if ($currentSd -notmatch [regex]::Escape($sid)) {
+    if ($currentSd -match "S:") {
+        $newSd = $currentSd -replace "S:", "${ace}S:"
+    } else {
+        $newSd = "$currentSd$ace"
+    }
+
+    sc.exe sdset $ServiceName $newSd
+}
+```
+
+Validar nuevamente la ejecución desde el workflow.
+
+Si al finalizar el taller se requiere quitar estos permisos, consultar la sección [13.2.2 Remover permisos del servicio en Windows](#1322-remover-permisos-del-servicio-en-windows).
+
+Referencia oficial:
+- [Datadog Windows Agent User](https://docs.datadoghq.com/agent/guide/windows-agent-ddagent-user/)
+- [Microsoft: Service Security and Access Rights](https://learn.microsoft.com/en-us/windows/win32/services/service-security-and-access-rights)
+
+
 ### 9.2 Validar connection de Script asociada al Private Action Runner
 
 El workflow utilizará una connection de tipo **Script** asociada al **Private Action Runner** de la workstation.
@@ -2022,7 +2063,173 @@ Get-Service -Name <SERVICIO_WINDOWS>
 
 ---
 
-## 13. Bitácora de cambios
+
+## 13. Desinstalación y limpieza
+
+Esta sección aplica cuando se desea retirar la configuración del taller de la workstation.
+
+Antes de desinstalar el Agent, validar si durante la prueba se agregaron permisos o archivos auxiliares.
+
+---
+
+### 13.1 Consideraciones previas
+
+Antes de limpiar la workstation:
+
+1. Validar si el servicio de prueba quedó en estado normal.
+
+2. Guardar evidencia necesaria del taller.
+
+3. Si se agregaron permisos al servicio Windows, removerlos antes de borrar archivos de `C:\ProgramData\Datadog`.
+
+4. Si se crearon archivos de configuración de scripts, eliminarlos únicamente si ya no serán reutilizados.
+
+---
+
+### 13.2 Limpieza en Windows
+
+#### 13.2.1 Detener el Datadog Agent
+
+Ejecutar PowerShell como administrador:
+
+```powershell
+Stop-Service -Name datadogagent -Force
+```
+
+---
+
+#### 13.2.2 Remover permisos del servicio en Windows
+
+Si durante el taller se otorgaron permisos al usuario `ddagentuser` sobre un servicio Windows, restaurar el descriptor de seguridad respaldado.
+
+Ejemplo para `Spooler`:
+
+```powershell
+$ServiceName = "Spooler"
+$BackupPath = "C:\ProgramData\Datadog\workshop-service-sddl-$ServiceName.txt"
+
+if (Test-Path $BackupPath) {
+    $originalSd = Get-Content $BackupPath -Raw
+    sc.exe sdset $ServiceName $originalSd
+}
+```
+
+Validar el descriptor actual del servicio:
+
+```powershell
+sc.exe sdshow Spooler
+```
+
+Si no existe respaldo del descriptor original, no aplicar cambios manuales sin validación previa del administrador del sistema.
+
+---
+
+#### 13.2.3 Desinstalar el Datadog Agent en Windows
+
+La desinstalación puede realizarse desde la interfaz de Windows:
+
+1. Abrir **Add or remove programs**.
+
+2. Buscar:
+
+   ```text
+   Datadog Agent
+   ```
+
+3. Seleccionar **Uninstall**.
+
+4. Seguir el asistente de desinstalación.
+
+La guía oficial de desinstalación para Windows indica que este proceso no elimina automáticamente la carpeta de configuración `C:\ProgramData\Datadog`.
+
+Referencia oficial:
+- [Datadog Agent para Windows](https://docs.datadoghq.com/agent/supported_platforms/windows/)
+
+---
+
+#### 13.2.4 Limpieza opcional de archivos en Windows
+
+Después de desinstalar el Agent, si ya no se requiere conservar configuración, logs o respaldos del taller, se puede eliminar la carpeta de datos.
+
+Ejecutar PowerShell como administrador:
+
+```powershell
+Remove-Item "C:\ProgramData\Datadog" -Recurse -Force
+```
+
+No ejecutar este paso si se requiere conservar evidencia, logs o archivos de configuración del taller.
+
+---
+
+### 13.3 Limpieza en Linux
+
+#### 13.3.1 Detener el Datadog Agent
+
+```bash
+sudo systemctl stop datadog-agent
+```
+
+---
+
+#### 13.3.2 Remover permisos sudo del taller
+
+Si durante el taller se creó un archivo sudoers para permitir que `dd-agent` iniciara un servicio, eliminarlo:
+
+```bash
+sudo rm -f /etc/sudoers.d/dd-agent-workshop
+```
+
+Validar que el archivo ya no exista:
+
+```bash
+sudo ls -l /etc/sudoers.d/dd-agent-workshop
+```
+
+---
+
+#### 13.3.3 Desinstalar el Datadog Agent en Linux
+
+Seleccionar el comando correspondiente al sistema operativo.
+
+RHEL, CentOS, Rocky, AlmaLinux, Amazon Linux u Oracle Linux:
+
+```bash
+sudo yum remove datadog-agent -y
+```
+
+Debian o Ubuntu:
+
+```bash
+sudo apt-get remove datadog-agent -y
+```
+
+SUSE:
+
+```bash
+sudo zypper remove datadog-agent
+```
+
+Referencia oficial:
+- [Datadog Agent para Linux](https://docs.datadoghq.com/agent/supported_platforms/linux/)
+
+---
+
+#### 13.3.4 Limpieza opcional de archivos en Linux
+
+Si ya no se requiere conservar configuración, logs o respaldos del taller:
+
+```bash
+sudo userdel dd-agent 2>/dev/null || true
+sudo rm -rf /opt/datadog-agent/
+sudo rm -rf /etc/datadog-agent/
+sudo rm -rf /var/log/datadog/
+```
+
+No ejecutar este paso si se requiere conservar evidencia, logs o archivos de configuración del taller.
+
+---
+
+## 14. Bitácora de cambios
 
 | Versión | Fecha | Descripción del cambio | Autor |
 |---|---|---|---|
