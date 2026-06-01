@@ -542,8 +542,6 @@ Si la cuenta fue creada específicamente para el taller, normalmente el usuario 
 
 Para este taller también se debe considerar que el workflow utilizará **Private Actions** mediante el **Private Action Runner** habilitado en el Datadog Agent. Por lo tanto, además de validar permisos para monitores y workflows, se deben revisar permisos relacionados con actions, runners y llaves de aplicación.
 
----
-
 ### 6.1 Validar rol asignado al usuario
 
 Desde la consola de Datadog:
@@ -571,8 +569,6 @@ Desde la consola de Datadog:
    ```
 
 Esto permite abrir directamente el rol asociado al usuario y revisar qué permisos tiene habilitados.
-
----
 
 ### 6.2 Revisar permisos del rol
 
@@ -604,8 +600,6 @@ runner
 api key
 application key
 ```
-
----
 
 ### 6.3 Consideraciones
 
@@ -647,8 +641,6 @@ Selecciona la ruta correspondiente:
 > [!IMPORTANT]
 > Los servicios listados en esta sección son únicamente sugerencias. Cada participante debe validar qué servicios tiene disponibles en su workstation y elegir uno con base en su criterio técnico y conocimiento del sistema operativo.
 
----
-
 ### 7.1 Criterios de selección
 
 El servicio seleccionado debe cumplir con lo siguiente:
@@ -661,8 +653,6 @@ El servicio seleccionado debe cumplir con lo siguiente:
 
 > [!CAUTION]
 > No utilizar servicios críticos del sistema operativo ni servicios productivos. La prueba debe realizarse con un servicio de bajo impacto.
-
----
 
 ### 7.2 Validar servicios disponibles en Linux
 
@@ -699,8 +689,6 @@ Servicios sugeridos, si están disponibles:
 > [!NOTE]
 > En Linux se debe utilizar el nombre completo del servicio administrado por `systemd`, por ejemplo `cups.service`.
 
----
-
 ### 7.3 Validar servicios disponibles en Windows
 
 En Windows, se pueden listar los servicios desde PowerShell:
@@ -736,8 +724,6 @@ Servicios sugeridos, si están disponibles:
 > [!NOTE]
 > En Windows se debe utilizar el **service name** para la configuración técnica. El nombre visible puede ser diferente. Por ejemplo, el servicio puede mostrarse como `Print Spooler`, pero su service name suele ser `Spooler`.
 
----
-
 ### 7.4 Registrar servicio seleccionado
 
 Después de elegir el servicio, registrar el nombre exacto que se utilizará durante el taller.
@@ -754,14 +740,6 @@ servicio_seleccionado: cups.service
 servicio_seleccionado: Spooler
 ```
 
-Este valor será utilizado posteriormente para:
-
-* Crear el monitor del servicio.
-* Simular la falla deteniendo el servicio.
-* Configurar el script predefinido de remediación.
-* Validar si el servicio volvió a estar activo después de ejecutar el workflow.
-
-
 ---
 
 ## 8. Configuración del monitoreo y creación del monitor
@@ -775,8 +753,6 @@ Selecciona la ruta correspondiente al sistema operativo:
 | Linux | [Ir a configuración en Linux](#81-configuración-del-monitoreo-en-linux) |
 | Windows | [Ir a configuración en Windows](#82-configuración-del-monitoreo-en-windows) |
 | Monitor | [Ir a creación del monitor](#83-creación-del-monitor-de-service-check) |
-
----
 
 ### 8.1 Configuración del monitoreo en Linux
 
@@ -824,11 +800,9 @@ sudo -u dd-agent datadog-agent check systemd
 
 El check debe ejecutarse sin errores críticos y debe mostrar información relacionada con la unidad configurada.
 
----
-
 ### 8.2 Configuración del monitoreo en Windows
 
-Para Windows se utilizará la integración de [Windows Service](https://docs.datadoghq.com/integrations/windows-service/), la cual permite monitorear servicios del sistema operativo.
+Para Windows se utilizará la integración de **Windows Service**, la cual permite monitorear servicios del sistema operativo.
 
 Datadog normalmente incluye un archivo `.example` con ejemplos de configuración. Para el taller no será necesario copiar todo ese contenido; se utilizará una configuración mínima con el servicio seleccionado.
 
@@ -845,7 +819,8 @@ init_config:
 
 instances:
   - services:
-      - <SERVICIO_WINDOWS>
+      - ^<SERVICIO_WINDOWS>$
+    disable_legacy_service_tag: true
 ```
 
 Ejemplo:
@@ -855,18 +830,26 @@ init_config:
 
 instances:
   - services:
-      - Spooler
+      - ^Spooler$
+    disable_legacy_service_tag: true
 ```
 
 > [!NOTE]
-> En Windows se debe utilizar el **service name**, no necesariamente el nombre visible del servicio.  
+> En Windows se debe utilizar el **service name**, no necesariamente el nombre visible del servicio.
+> 
 > Por ejemplo, el servicio puede mostrarse como `Print Spooler`, pero su service name suele ser `Spooler`.
+
+> [!NOTE]
+> La opción `disable_legacy_service_tag: true` evita el warning relacionado con la etiqueta heredada `service`, ya que el check utiliza la etiqueta `windows_service` para identificar el servicio monitoreado.
 
 Reiniciar el Datadog Agent:
 
 ```powershell
-Restart-Service datadogagent
+Restart-Service -Name datadogagent -Force
 ```
+
+> [!NOTE]
+> En Windows, el servicio `datadogagent` puede tener servicios dependientes. Por eso se utiliza `-Force` para reiniciar correctamente el Agent.
 
 Validar el check:
 
@@ -875,6 +858,25 @@ Validar el check:
 ```
 
 El check debe ejecutarse sin errores críticos y debe mostrar información relacionada con el servicio configurado.
+
+En la salida, validar principalmente:
+
+```text
+Running Checks
+windows_service
+Total Runs: 1
+Service Checks: Last Run: 1
+Last Successful Execution Date
+```
+
+También se pueden observar etiquetas similares a las siguientes:
+
+```text
+windows_service:Spooler
+windows_service_state:running
+```
+
+Estas etiquetas confirman que el Agent está evaluando el servicio configurado.
 
 ---
 
@@ -897,20 +899,22 @@ Desde Datadog:
 5. En **Pick monitor scope**, seleccionar el host y el servicio utilizados en el taller.
 6. En **Set alert conditions**, utilizar **Check Alert**.
 7. Configurar la alerta para estado `Critical`.
-8. Configurar la recuperación para estado `OK`.
-9. En el nombre del monitor, utilizar una estructura similar:
+8. En **Trigger a separate alert for each**, seleccionar el grupo por el cual Datadog generará alertas separadas.
 
+   Para el taller, seleccionar la opción que corresponda al sistema operativo y al tipo de agrupación deseada:
+
+   > [!NOTE]
+   > En Windows, si se configuró `disable_legacy_service_tag: true`, se debe utilizar `windows_service` en lugar de `service`.
+
+9. Configurar la recuperación para estado `OK`.
+
+10. En el nombre del monitor, utilizar una estructura similar:
 ```text
 [Workshop] Servicio detenido - {{host.name}} - {{service.name}}
 ```
 
-Si `{{service.name}}` no muestra el valor esperado en la vista previa, reemplazarlo por el nombre fijo del servicio seleccionado.
-
-Ejemplo:
-
-```text
-[Workshop] Servicio detenido - {{host.name}} - Spooler
-```
+> [!NOTE]
+>Si `{{service.name}}` no muestra el valor esperado en la vista previa, reemplazarlo por el nombre fijo del servicio seleccionado.
 
 10. En el mensaje del monitor, utilizar una estructura similar:
 
@@ -969,17 +973,6 @@ Start-Service -Name <SERVICIO_WINDOWS>
 
 En esta sección se creará el workflow que será ejecutado cuando el monitor detecte el servicio detenido.
 
-El workflow recibirá el contexto del monitor, validará la información básica del evento y ejecutará una action de remediación controlada mediante un mecanismo autorizado.
-
-> [!IMPORTANT]
-> Workflow Automation coordina la automatización, pero no debe entenderse como un agente remoto para ejecutar comandos directamente sobre el servidor. Para iniciar un servicio en el host se requiere una integración, webhook, API o plataforma externa autorizada.
-
----
-
-## 9. Creación del workflow
-
-En esta sección se creará el workflow que será ejecutado cuando el monitor detecte el servicio detenido.
-
 El workflow utilizará el **Monitor Trigger** como disparador y ejecutará una acción de remediación mediante el **Private Action Runner** configurado previamente en el Datadog Agent.
 
 El flujo general será:
@@ -1003,15 +996,11 @@ Selecciona la ruta correspondiente al sistema operativo:
 | Linux             | [Ir a configuración del script en Linux](#911-configurar-script-predefinido-en-linux)     |
 | Windows           | [Ir a configuración del script en Windows](#912-configurar-script-predefinido-en-windows) |
 
----
-
 ### 9.1 Configurar script predefinido en el Private Action Runner
 
 Antes de crear el workflow, se debe definir el script que el Private Action Runner podrá ejecutar.
 
 Este script será el encargado de iniciar nuevamente el servicio seleccionado en la sección anterior.
-
----
 
 #### 9.1.1 Configurar script predefinido en Linux
 
@@ -1062,8 +1051,6 @@ sudo systemctl restart datadog-agent
 > [!WARNING]
 > No se recomienda permitir comandos amplios como `systemctl *` o scripts que acepten cualquier servicio como parámetro. Para el taller, el script debe limitarse al servicio seleccionado.
 
----
-
 #### 9.1.2 Configurar script predefinido en Windows
 
 Editar el archivo de configuración de scripts de PowerShell del Private Action Runner:
@@ -1071,6 +1058,11 @@ Editar el archivo de configuración de scripts de PowerShell del Private Action 
 ```powershell
 notepad "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
 ```
+
+> [!IMPORTANT]
+> Si el archivo ya contiene contenido de ejemplo, reemplazar todo el contenido del archivo por la configuración del taller.
+>
+> Para Windows se debe utilizar `runPredefinedPowershellScript`. No utilizar `runPredefinedScript`, ya que ese bloque corresponde a scripts tipo Linux/bash.
 
 Agregar una configuración similar, reemplazando `<SERVICIO_WINDOWS>` por el servicio seleccionado:
 
@@ -1094,16 +1086,29 @@ runPredefinedPowershellScript:
       Write-Output "Start requested for service Spooler"
 ```
 
-Reiniciar el Datadog Agent para que el Private Action Runner tome la configuración:
+Guardar el archivo y reiniciar el Datadog Agent para que el Private Action Runner tome la configuración:
 
 ```powershell
-Restart-Service datadogagent
+Restart-Service -Name datadogagent -Force
 ```
 
 > [!NOTE]
-> En Windows, el Private Action Runner ejecuta el script con el usuario configurado por el Agent. Si el servicio no puede iniciarse por permisos, se debe validar el permiso del usuario asociado al runner antes de continuar.
+> En Windows, el servicio `datadogagent` puede tener servicios dependientes. Por eso se utiliza `-Force` para reiniciar correctamente el Agent.
 
----
+Después de reiniciar el Agent, validar que el archivo exista y que el contenido se haya guardado correctamente:
+
+```powershell
+Get-Content "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
+```
+
+En la connection de tipo **Script**, validar que el campo **Path to file** apunte al archivo correcto:
+
+```text
+C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml
+```
+
+> [!IMPORTANT]
+> Si la prueba de la connection muestra `Connection test timed out`, validar que el Private Action Runner no aparezca como `Inactive`, reiniciar el Datadog Agent y esperar algunos minutos antes de volver a probar.
 
 ### 9.2 Validar connection de Script
 
@@ -1156,8 +1161,6 @@ Si no existe, crear una nueva connection:
    ```
 
 6. Confirmar acceso y guardar la connection.
-
----
 
 ### 9.3 Buscar Workflow Automation
 
