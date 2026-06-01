@@ -250,7 +250,7 @@ curl -I https://app.datadoghq.com/
 Invoke-WebRequest -Uri "https://app.datadoghq.com/" -UseBasicParsing
 ```
 
-Si la workstation aún no tiene Datadog Agent instalado, la instalación se realizará en la sección [4. Instalación del Datadog Agent](#4-instalación-del-datadog-agent).
+Si la workstation aún no tiene Datadog Agent instalado, la instalación se realizará en la siguiente sección.
 
 Si la workstation ya tiene Datadog Agent instalado, se validará durante el taller si puede reutilizarse o si es necesario ajustar su configuración.
 
@@ -262,7 +262,8 @@ En esta sección se instalará el Datadog Agent en la workstation que se utiliza
 
 Además de instalar el Agent para reportar información básica del host, se habilitará la opción **Enable Agent to take action**, ya que el workflow utilizará el Agent como mecanismo autorizado para ejecutar una acción de remediación mediante **Private Action Runner**.
 
-Si la workstation ya tiene el Agent instalado y autorizado para usar la API key del taller, validar también que tenga habilitado **Private Action Runner** antes de continuar con la sección [5. Validación inicial del Agent](#5-validación-inicial-del-agent).
+Si la workstation ya tiene el Agent instalado y autorizado para usar la API key del taller, se puede omitir la reinstalación del Agent. Antes de continuar, validar que el Agent reporte correctamente y que tenga habilitado **Private Action Runner**, como se indica en la sección [5. Validación de reporte y Private Action Runner](#5-validación-de-reporte-y-private-action-runner).
+
 
 Para este taller se utilizarán los siguientes valores:
 
@@ -271,9 +272,6 @@ site: datadoghq.com
 api_key: <API_KEY_DEL_TALLER>
 app_key: <APP_KEY_PRIVATE_ACTION_RUNNER>
 ```
-
-> [!IMPORTANT]
-> La `app_key` utilizada para el Private Action Runner debe generarse desde Datadog con los permisos requeridos para acciones privadas. No debe almacenarse en repositorios, documentos públicos ni archivos compartidos sin protección.
 
 Selecciona la ruta correspondiente al sistema operativo:
 
@@ -349,15 +347,6 @@ Validar el estado general del Agent:
 sudo datadog-agent status
 ```
 
-Resultado esperado:
-
-* El servicio `datadog-agent` debe estar activo.
-* El comando `datadog-agent status` debe mostrar información general del Agent.
-* No deben observarse errores críticos de autenticación o conectividad.
-* El host debe quedar registrado como Private Action Runner en Datadog.
-
----
-
 ### 4.2 Instalación en Windows
 
 Para Windows se utilizará el instalador generado desde Datadog. Si se requiere validar compatibilidad o detalles adicionales, consultar la guía de [Datadog Agent para Windows](https://docs.datadoghq.com/agent/supported_platforms/windows/).
@@ -379,6 +368,11 @@ Pasos generales:
 5. En la sección **Host based**, seleccionar **Windows**.
 
 6. Utilizar la opción **PowerShell**, marcada como recomendada por Datadog.
+
+> [!NOTE]
+> La opción **PowerShell** es la recomendada para el taller porque permite instalar el Agent con la API key, el site y la configuración del Private Action Runner definidos desde el mismo comando.
+
+También puede utilizarse la opción **MSI** cuando se prefiera una instalación gráfica, cuando la política de la workstation no permita ejecutar comandos de instalación desde PowerShell o cuando el equipo de soporte solicite utilizar un instalador manual.
 
 7. Validar que el comando generado utilice:
 
@@ -414,10 +408,45 @@ $env:DD_PRIVATE_ACTION_RUNNER_ACTIONS_ALLOWLIST = 'com.datadoghq.script.runPrede
 
 13. Ejecutar el comando desde una sesión de **PowerShell como administrador**.
 
-> [!NOTE]
-> La opción **PowerShell** es la recomendada para el taller porque permite instalar el Agent con la API key, el site y la configuración del Private Action Runner definidos desde el mismo comando.
 
-También puede utilizarse la opción **MSI** cuando se prefiera una instalación gráfica, cuando la política de la workstation no permita ejecutar comandos de instalación desde PowerShell o cuando el equipo de soporte solicite utilizar un instalador manual.
+#### Posible bloqueo por Smart App Control en Windows
+
+Durante la instalación en Windows, puede aparecer un bloqueo de **Smart App Control** indicando que Windows no puede confirmar quién publicó la aplicación o que no reconoce el instalador.
+
+Este bloqueo puede impedir que se ejecute el instalador del Datadog Agent, aunque el comando haya sido generado desde Datadog. Para continuar con la instalación, se puede desactivar **Smart App Control** desde la configuración de seguridad de Windows.
+
+Pasos para desactivarlo:
+
+1. Abrir **Windows Security**.
+
+2. Entrar a:
+
+   ```text
+   App & browser control
+   ```
+
+3. Seleccionar:
+
+   ```text
+   Smart App Control settings
+   ```
+
+4. Cambiar **Smart App Control** a:
+
+   ```text
+   Off
+   ```
+
+5. Confirmar el cambio si Windows solicita autorización.
+
+6. Cerrar la ventana donde se bloqueó el instalador.
+
+7. Abrir nuevamente **PowerShell como administrador**.
+
+8. Ejecutar nuevamente el comando completo generado por Datadog.
+
+> [!WARNING]
+> No deshabilitar Windows Defender completo ni el firewall como primera opción. El bloqueo observado corresponde a **Smart App Control**.
 
 Validar que el servicio esté en ejecución:
 
@@ -430,16 +459,6 @@ Validar el estado general del Agent:
 ```powershell
 & "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status
 ```
-
-Resultado esperado:
-
-* El servicio `datadogagent` debe estar en estado `Running`.
-* El comando `agent.exe status` debe mostrar información general del Agent.
-* No deben observarse errores críticos de autenticación o conectividad.
-* El host debe quedar registrado como Private Action Runner en Datadog.
-
----
-
 ### 4.3 Validación del Private Action Runner
 
 Después de instalar el Agent, validar que el Private Action Runner haya quedado registrado en Datadog.
@@ -469,8 +488,6 @@ Pasos generales:
 
 En esta sección se validará que la workstation donde se instaló el Datadog Agent ya se encuentre reportando información hacia Datadog.
 
-También se validará que el Agent haya quedado habilitado como **Private Action Runner**, ya que será utilizado posteriormente por Workflow Automation para ejecutar la acción de remediación.
-
 Antes de continuar, identifica el nombre de la workstation.
 
 #### Linux
@@ -486,7 +503,6 @@ hostname
 ```
 
 Con ese nombre, validar el reporte desde la consola de Datadog.
-
 
 ### 5.1 Validar reporte del host en Datadog
 
@@ -513,89 +529,6 @@ Pasos generales:
 
 > [!IMPORTANT]
 > Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [13. Troubleshooting básico](#13-troubleshooting-básico).
-
-### 5.2 Validar estado local del Agent
-
-Además de validar el host desde la consola de Datadog, validar localmente que el Agent se encuentre en ejecución.
-
-#### Linux
-
-```bash
-sudo systemctl status datadog-agent
-```
-
-Validar el estado general del Agent:
-
-```bash
-sudo datadog-agent status
-```
-
-#### Windows PowerShell
-
-```powershell
-Get-Service datadogagent
-```
-
-Validar el estado general del Agent:
-
-```powershell
-& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status
-```
-
-### 5.3 Validar Private Action Runner
-
-Después de confirmar que el host reporta correctamente, validar que el Agent quedó registrado como **Private Action Runner**.
-
-Pasos generales:
-
-1. En Datadog, presionar `Ctrl + K`.
-
-2. Buscar:
-
-   ```text
-   Private Action Runners
-   ```
-
-3. Abrir la sección correspondiente.
-
-4. Buscar el runner asociado a la workstation del taller.
-
-5. Confirmar que el runner aparece registrado y disponible.
-
-> [!IMPORTANT]
-> Si el Private Action Runner no aparece, validar que durante la instalación se haya habilitado la opción **Enable Agent to take action** y que se haya utilizado la Application Key generada para este propósito.
-
----
-
-### 5.4 Validar allowlist de acciones privadas
-
-Para este taller, el Agent debe permitir únicamente la acción necesaria para ejecutar scripts predefinidos.
-
-Validar que la allowlist corresponda al sistema operativo utilizado.
-
-#### Linux
-
-```text
-com.datadoghq.script.runPredefinedScript
-```
-
-#### Windows
-
-```text
-com.datadoghq.script.runPredefinedPowershellScript
-```
-
-Resultado esperado:
-
-| Sistema operativo | Acción permitida esperada                            |
-| ----------------- | ---------------------------------------------------- |
-| Linux             | `com.datadoghq.script.runPredefinedScript`           |
-| Windows           | `com.datadoghq.script.runPredefinedPowershellScript` |
-
-> [!WARNING]
-> No se recomienda habilitar acciones adicionales si no serán utilizadas durante el taller. El runner debe operar con el menor alcance posible.
-
-Con estas validaciones completadas, la workstation estará lista para continuar con la revisión de permisos y la configuración del servicio de prueba.
 
 ---
 
