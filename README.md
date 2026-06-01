@@ -555,6 +555,12 @@ Validación adicional desde la workstation:
 sudo datadog-agent status | grep -A 10 -i "Private Action Runner"
 ```
 
+Revisar el log del Private Action Runner:
+
+```bash
+sudo tail -n 100 /var/log/datadog/private-action-runner.log
+```
+
 #### Windows PowerShell
 
 ```powershell
@@ -574,6 +580,13 @@ El resultado esperado es que el runner aparezca disponible en Datadog y que no s
 ```text
 401 error validating JWT
 ```
+
+> [!IMPORTANT]
+> En Windows no se utilizará el script tipo Linux/bash.
+>
+> Si existe un script de ejemplo o configuración previa asociada a `runPredefinedScript`, no se debe usar para esta prueba, puede ser eliminada.
+>
+> La configuración correcta para Windows se agregará más adelante usando PowerShell mediante `runPredefinedPowershellScript`.
 
 ---
 
@@ -621,44 +634,7 @@ Pasos generales:
 > Después de instalar o reiniciar el Datadog Agent, la workstation puede tardar algunos minutos en aparecer en Datadog.
 
 > [!IMPORTANT]
-> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [12. Troubleshooting básico](#12-troubleshooting-básico).
-
-
-### 5.2 Validar Private Action Runner
-
-Después de confirmar que la workstation aparece en Datadog, validar que también exista el **Private Action Runner** asociado al Agent instalado.
-
-Desde la consola de Datadog:
-
-1. Presionar `Ctrl + K`.
-
-2. Buscar:
-
-   ```text
-   Private Action Runners
-   ```
-
-3. Entrar a **Private Action Runners**.
-
-4. Buscar el runner asociado a la workstation del taller.
-
-5. Abrir el detalle del runner.
-
-6. Confirmar que el runner aparece registrado.
-
-7. Confirmar que existe una connection asociada al runner.
-
-Para este taller, la connection que se utilizará posteriormente debe ser de tipo:
-
-```text
-Script
-```
-
-> [!NOTE]
-> En esta sección solo se valida que el Private Action Runner exista y que tenga una connection asociada. La ejecución real de la action se validará más adelante desde Workflow Automation.
-
-> [!IMPORTANT]
-> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [12. Troubleshooting básico](#12-troubleshooting-básico).
+> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos, revisar la sección [12. Troubleshooting básico](#12-troubleshooting-básico).
 
 ---
 
@@ -854,22 +830,6 @@ Servicios sugeridos, si están disponibles:
 > [!NOTE]
 > En Windows se debe utilizar el **service name** para la configuración técnica. El nombre visible puede ser diferente. Por ejemplo, el servicio puede mostrarse como `Print Spooler`, pero su service name suele ser `Spooler`.
 
-### 7.4 Registrar servicio seleccionado
-
-Después de elegir el servicio, registrar el nombre exacto que se utilizará durante el taller.
-
-#### Linux
-
-```yaml
-servicio_seleccionado: cups.service
-```
-
-#### Windows
-
-```yaml
-servicio_seleccionado: Spooler
-```
-
 ---
 
 ## 8. Configuración del monitoreo y creación del monitor
@@ -978,9 +938,6 @@ Reiniciar el Datadog Agent:
 Restart-Service -Name datadogagent -Force
 ```
 
-> [!NOTE]
-> En Windows, el servicio `datadogagent` puede tener servicios dependientes. Por eso se utiliza `-Force` para reiniciar correctamente el Agent.
-
 Validar el check:
 
 ```powershell
@@ -988,25 +945,6 @@ Validar el check:
 ```
 
 El check debe ejecutarse sin errores críticos y debe mostrar información relacionada con el servicio configurado.
-
-En la salida, validar principalmente:
-
-```text
-Running Checks
-windows_service
-Total Runs: 1
-Service Checks: Last Run: 1
-Last Successful Execution Date
-```
-
-También se pueden observar etiquetas similares a las siguientes:
-
-```text
-windows_service:Spooler
-windows_service_state:running
-```
-
-Estas etiquetas confirman que el Agent está evaluando el servicio configurado.
 
 ---
 
@@ -1033,8 +971,8 @@ Desde Datadog:
 
    Para el taller, seleccionar la opción que corresponda al sistema operativo y al tipo de agrupación deseada:
 
-   > [!NOTE]
-   > En Windows, si se configuró `disable_legacy_service_tag: true`, se debe utilizar `windows_service` en lugar de `service`.
+> [!NOTE]
+> En Windows, si se configuró `disable_legacy_service_tag: true`, se debe utilizar `windows_service` en lugar de `service`.
 
 9. Configurar la recuperación para estado `OK`.
 
@@ -1042,9 +980,6 @@ Desde Datadog:
 ```text
 [Workshop] Servicio detenido - {{host.name}} - {{service.name}}
 ```
-
-> [!NOTE]
->Si `{{service.name}}` no muestra el valor esperado en la vista previa, reemplazarlo por el nombre fijo del servicio seleccionado.
 
 10. En el mensaje del monitor, utilizar una estructura similar:
 
@@ -1119,6 +1054,12 @@ Workflow valida si el monitor regresó a OK
 > [!IMPORTANT]
 > Workflow Automation coordina la automatización, pero no debe entenderse como un agente remoto genérico para ejecutar cualquier comando sobre el servidor. Para este taller, la remediación se realizará únicamente mediante scripts predefinidos y permitidos en el Private Action Runner.
 
+### 9.1 Configurar script predefinido en el Private Action Runner
+
+Antes de crear el workflow, se debe definir el script que el Private Action Runner podrá ejecutar.
+
+Este script será el encargado de iniciar nuevamente el servicio seleccionado en la sección anterior.
+
 Selecciona la ruta correspondiente al sistema operativo:
 
 | Sistema operativo | Ruta                                                                                      |
@@ -1126,13 +1067,10 @@ Selecciona la ruta correspondiente al sistema operativo:
 | Linux             | [Ir a configuración del script en Linux](#911-configurar-script-predefinido-en-linux)     |
 | Windows           | [Ir a configuración del script en Windows](#912-configurar-script-predefinido-en-windows) |
 
-### 9.1 Configurar script predefinido en el Private Action Runner
+> [!IMPORTANT]
+> Si el archivo ya contiene contenido de ejemplo, hacer un backup y reemplazar todo el contenido del archivo por la configuración del taller.
 
-Antes de crear el workflow, se debe definir el script que el Private Action Runner podrá ejecutar.
-
-Este script será el encargado de iniciar nuevamente el servicio seleccionado en la sección anterior.
-
-#### 9.1.1 Configurar script predefinido en Linux
+### 9.1.1 Configurar script predefinido en Linux
 
 Editar el archivo de configuración de scripts del Private Action Runner:
 
@@ -1189,10 +1127,6 @@ Editar el archivo de configuración de scripts de PowerShell del Private Action 
 notepad "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
 ```
 
-> [!IMPORTANT]
-> Si el archivo ya contiene contenido de ejemplo, reemplazar todo el contenido del archivo por la configuración del taller.
->
-> Para Windows se debe utilizar `runPredefinedPowershellScript`. No utilizar `runPredefinedScript`, ya que ese bloque corresponde a scripts tipo Linux/bash.
 
 Agregar una configuración similar, reemplazando `<SERVICIO_WINDOWS>` por el servicio seleccionado:
 
@@ -1222,75 +1156,56 @@ Guardar el archivo y reiniciar el Datadog Agent para que el Private Action Runne
 Restart-Service -Name datadogagent -Force
 ```
 
-> [!NOTE]
-> En Windows, el servicio `datadogagent` puede tener servicios dependientes. Por eso se utiliza `-Force` para reiniciar correctamente el Agent.
+Después de reiniciar el Agent, no se probará la connection de tipo **Script** desde el botón **Test** cuando el sistema operativo sea Windows.
 
-Después de reiniciar el Agent, validar que el archivo exista y que el contenido se haya guardado correctamente:
+En Windows, ese test puede mostrar el siguiente mensaje:
 
-```powershell
-Get-Content "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
-```
+    Testing script connection is not available on Windows
 
-En la connection de tipo **Script**, validar que el campo **Path to file** apunte al archivo correcto:
+Esto no invalida la configuración. La prueba real se realizará más adelante desde el workflow usando la action:
 
-```text
-C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml
-```
+    Run Predefined PowerShell Script
 
-> [!IMPORTANT]
-> Si la prueba de la connection muestra `Connection test timed out`, validar que el Private Action Runner no aparezca como `Inactive`, reiniciar el Datadog Agent y esperar algunos minutos antes de volver a probar.
+La connection de tipo **Script** debe conservarse, porque será utilizada por la action de PowerShell.
 
-### 9.2 Validar connection de Script
+También puede ocurrir que el runner aparezca como `Inactive` en la vista de detalle. Para este taller, la validación funcional se confirmará cuando el workflow ejecute correctamente la action de PowerShell.
 
-El workflow necesita utilizar una connection de tipo **Script** asociada al Private Action Runner.
+### 9.2 Validar connection de Script asociada al Private Action Runner
+
+El workflow utilizará una connection de tipo **Script** asociada al **Private Action Runner** de la workstation.
+
+Esta connection será utilizada más adelante por la action del workflow para ejecutar el script correspondiente al sistema operativo:
+
+| Sistema operativo | Action del workflow |
+|---|---|
+| Linux | Run Predefined Script |
+| Windows | Run Predefined PowerShell Script |
 
 Desde la consola de Datadog:
 
-1. Presionar `Ctrl + K`.
+1. Ir a **Action Catalog**.
 
-2. Buscar:
+2. Entrar a **Connections**.
 
-   ```text
-   Connections
-   ```
-
-3. Entrar a **Connections**.
-
-4. Buscar una connection de tipo **Script** asociada al Private Action Runner de la workstation.
-
-5. Confirmar que la connection existe y apunta al runner correcto.
-
-Si no existe, crear una nueva connection:
-
-1. Seleccionar **New Connection**.
-
-2. Buscar o seleccionar **Script**.
-
-3. Asignar un nombre a la connection.
-
-   Nombre sugerido:
+3. Filtrar por la integración:
 
    ```text
-   workshop-script-runner
+   Script
    ```
 
-4. Seleccionar el **Private Action Runner** de la workstation.
+4. Confirmar que exista una connection de tipo **Script** asociada al Private Action Runner de la workstation.
 
-5. Confirmar la ruta del archivo de scripts según el sistema operativo.
+5. Validar que la connection esté vinculada al runner correcto.
 
-   Linux:
+En Linux, si el botón **Test** está disponible, puede utilizarse como validación adicional.
 
-   ```text
-   /etc/datadog-agent/private-action-runner/script-config.yaml
-   ```
+En Windows, no se utilizará el botón **Test** de la connection. La validación se realizará posteriormente desde el workflow usando la action:
 
-   Windows:
+```text
+Run Predefined PowerShell Script
+```
 
-   ```text
-   C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml
-   ```
-
-6. Confirmar acceso y guardar la connection.
+Si no aparece una connection de tipo **Script**, validar primero que el Private Action Runner esté disponible y que la acción correspondiente esté permitida en la configuración del Agent.
 
 ### 9.3 Buscar Workflow Automation
 
@@ -1330,8 +1245,6 @@ Dentro de **Workflow Automation**:
 
 6. Crear el workflow.
 
-7. Revisar el **mention handle** del workflow, ya que se utilizará posteriormente para asociarlo al monitor.
-
 > [!NOTE]
 > La asociación final entre el monitor y el workflow se realizará en la sección [10. Asociación del monitor con el workflow](#10-asociación-del-monitor-con-el-workflow).
 
@@ -1343,10 +1256,10 @@ Después de crear el workflow con el **Monitor Trigger**, agregar la action que 
 
 Selecciona la ruta correspondiente al sistema operativo:
 
-| Sistema operativo | Action                                                             |
-| ----------------- | ------------------------------------------------------------------ |
-| Linux             | [Run Predefined Script](#951-agregar-action-en-linux)              |
-| Windows           | [Run Predefined PowerShell Script](#952-agregar-action-en-windows) |
+| Sistema operativo | Action |
+|---|---|
+| Linux | [Run Predefined Script](#951-agregar-action-en-linux) |
+| Windows | [Run Predefined PowerShell Script](#952-agregar-action-en-windows) |
 
 ---
 
@@ -1370,11 +1283,13 @@ Selecciona la ruta correspondiente al sistema operativo:
 
 5. Seleccionar la connection de tipo **Script** asociada al Private Action Runner.
 
-6. Seleccionar el script configurado previamente:
+6. Seleccionar el script configurado previamente en:
 
    ```text
-   start_selected_service
+   /etc/datadog-agent/private-action-runner/script-config.yaml
    ```
+
+   El nombre del script debe coincidir exactamente con el definido en el archivo de configuración.
 
 7. Guardar la configuración del paso.
 
@@ -1400,22 +1315,24 @@ Selecciona la ruta correspondiente al sistema operativo:
 
 5. Seleccionar la connection de tipo **Script** asociada al Private Action Runner.
 
-6. Seleccionar el script configurado previamente:
+6. Seleccionar el script configurado previamente en:
 
    ```text
-   startSelectedService
+   C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml
    ```
+
+   El nombre del script debe coincidir exactamente con el definido en el archivo de configuración.
 
 7. Guardar la configuración del paso.
 
 > [!IMPORTANT]
-> Para este taller, el script debe iniciar únicamente el servicio seleccionado. No se deben agregar acciones adicionales como notebooks, Teams, Slack u otras integraciones externas.
+> Para este taller, el workflow solo debe ejecutar la remediación del servicio seleccionado. No se deben agregar acciones adicionales innecesarias.
 
 ---
 
 ### 9.6 Agregar espera después de la remediación
 
-Después de ejecutar el script, agregar una pausa para permitir que el servicio inicie y que el Agent reporte nuevamente el estado.
+Después de ejecutar la action de remediación, agregar una pausa para permitir que el servicio inicie y que el Agent reporte nuevamente el estado.
 
 Pasos generales:
 
@@ -1441,73 +1358,7 @@ El tiempo puede ajustarse según la frecuencia del check configurado en el Agent
 
 ---
 
-### 9.7 Consultar nuevamente el estado del monitor
-
-Después de la espera, agregar una action para consultar nuevamente el estado del monitor.
-
-Pasos generales:
-
-1. Dar clic en el ícono **+** debajo de la action de espera.
-
-2. Seleccionar **Actions**.
-
-3. Buscar una action relacionada con monitores, por ejemplo:
-
-   ```text
-   monitor
-   ```
-
-4. Seleccionar una action que permita consultar los detalles o el estado del monitor.
-
-5. Configurar el ID del monitor utilizando la variable del trigger:
-
-   ```text
-   {{Source.monitor.id}}
-   ```
-
-6. Guardar la configuración del paso.
-
-> [!NOTE]
-> Las variables disponibles pueden revisarse en la sección **Inputs, Variables, and Outputs** del workflow. Para workflows disparados por monitores, el objeto `Source` contiene información del monitor que generó la ejecución.
-
----
-
-### 9.8 Agregar condición de recuperación
-
-Después de consultar nuevamente el monitor, agregar una condición para validar si la remediación fue exitosa.
-
-Pasos generales:
-
-1. Dar clic en el ícono **+** debajo de la action que consulta el estado del monitor.
-
-2. Seleccionar **Actions**.
-
-3. Buscar una action de lógica, por ejemplo:
-
-   ```text
-   condition
-   ```
-
-4. Seleccionar la action de condición.
-
-5. Definir la validación:
-
-   ```text
-   ¿El monitor regresó a OK?
-   ```
-
-6. Configurar dos ramas:
-
-   | Rama | Acción                                                                   |
-   | ---- | ------------------------------------------------------------------------ |
-   | Sí   | Finalizar el workflow como remediación exitosa.                          |
-   | No   | Finalizar el workflow como remediación no exitosa y revisar manualmente. |
-
-Para este taller, no se agregarán acciones externas de notificación. La validación se realizará desde el historial de ejecución del workflow y desde el estado del monitor.
-
----
-
-### 9.9 Guardar y publicar el workflow
+### 9.7 Guardar y publicar el workflow
 
 Cuando el flujo esté completo:
 
@@ -1515,7 +1366,7 @@ Cuando el flujo esté completo:
 
 2. Confirmar que la action de remediación utilice la connection de tipo **Script**.
 
-3. Confirmar que el workflow tenga la espera y la validación posterior del monitor.
+3. Confirmar que se haya agregado una espera después de la remediación.
 
 4. Guardar el workflow.
 
@@ -1525,6 +1376,8 @@ Cuando el flujo esté completo:
 > El workflow debe estar publicado para poder ejecutarse automáticamente desde el monitor.
 
 Con esto, el workflow queda preparado para asociarse al monitor creado previamente.
+
+La validación de la recuperación del servicio y del estado del monitor se realizará en la sección 11.
 
 ---
 
@@ -1612,8 +1465,8 @@ Selecciona la ruta correspondiente:
 
 | Sistema operativo | Ruta de validación                                |
 | ----------------- | ------------------------------------------------- |
-| Linux             | [Ir a prueba en Linux](#1211-prueba-en-linux)     |
-| Windows           | [Ir a prueba en Windows](#1212-prueba-en-windows) |
+| Linux             | [Ir a prueba en Linux](#1111-prueba-en-linux)     |
+| Windows           | [Ir a prueba en Windows](#1112-prueba-en-windows) |
 
 ---
 
@@ -1873,9 +1726,9 @@ Puntos a revisar:
 
 ---
 
-### 12.3 El Private Action Runner no aparece
+### 12.3 El Private Action Runner no aparece o queda inactivo
 
-Si el host aparece en Datadog pero el **Private Action Runner** no está disponible, revisar la configuración utilizada durante la instalación del Agent.
+Si el host aparece en Datadog pero el **Private Action Runner** no está disponible, queda inactivo o no puede usarse desde el workflow, revisar la configuración utilizada durante la instalación del Agent.
 
 Desde Datadog:
 
@@ -1892,26 +1745,70 @@ Desde Datadog:
 Puntos a revisar:
 
 * Que se haya habilitado **Enable Agent to take action** durante la instalación.
-* Que se haya utilizado la Application Key correcta.
-* Que la Application Key tenga los permisos requeridos para Private Actions.
+* Que se haya utilizado una **Application Key** válida en `app_key`.
+* Que la Application Key tenga permisos para Private Actions.
+* Que `remote_configuration` esté habilitado.
 * Que el Agent haya sido reiniciado después de la configuración.
-* Que la workstation tenga conectividad hacia Datadog.
-* Que no existan errores relacionados con el runner en los logs del Agent.
+* Que no existan errores relacionados con el runner en los logs.
 
 #### Linux
 
+Validar estado del runner:
+
 ```bash
-sudo datadog-agent status
+sudo datadog-agent status | grep -A 10 -i "Private Action Runner"
+```
+
+Revisar logs:
+
+```bash
+sudo tail -n 100 /var/log/datadog/private-action-runner.log
 sudo tail -n 50 /var/log/datadog/agent.log
 ```
 
 #### Windows PowerShell
 
+Validar estado del runner:
+
 ```powershell
-& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status
-Get-Content "C:\ProgramData\Datadog\logs\agent.log" -Tail 50
+& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status |
+Select-String -Pattern "Private Action Runner|URN|Self Enroll|Actions Allowlist|Remote Configuration" -Context 0,8
 ```
 
+Revisar logs:
+
+```powershell
+Get-Content "C:\ProgramData\Datadog\logs\private-action-runner.log" -Tail 100 |
+Select-String -Pattern "Private action runner starting|URN|Keys manager ready|Starting loop|401|error validating JWT"
+```
+
+Si en Windows el runner inicia pero aparece el error:
+
+```text
+401 error validating JWT
+```
+
+puede existir una identidad local inválida del runner. Para forzar un nuevo enrolamiento, ejecutar PowerShell como administrador:
+
+```powershell
+Stop-Service -Name datadogagent -Force
+
+$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+$identityFile = "C:\ProgramData\Datadog\privateactionrunner_private_identity.json"
+
+if (Test-Path $identityFile) {
+    Copy-Item $identityFile "$identityFile.bak-$timestamp" -Force
+    Remove-Item $identityFile -Force
+}
+
+Start-Service -Name datadogagent
+```
+
+Después de reiniciar el Agent, validar nuevamente que el runner aparezca en:
+
+```text
+Private Action Runners
+```
 ---
 
 ### 12.4 El servicio no reporta estado
@@ -2081,6 +1978,24 @@ Get-Service -Name <SERVICIO_WINDOWS>
 > [!IMPORTANT]
 > Workflow Automation coordina la ejecución, pero el inicio real del servicio depende del **Private Action Runner**, la connection de Script, la configuración del script predefinido y los permisos locales del Agent.
 
+### 12.7.1 Consideración sobre la prueba de connection en Windows
+
+En Windows, la connection de tipo **Script** puede mostrar el siguiente mensaje al usar el botón **Test**:
+
+```text
+Testing script connection is not available on Windows
+```
+
+Esto no significa que PowerShell no sea compatible.
+
+Para Windows, la validación real se realiza desde la ejecución del workflow usando la action:
+
+```text
+Run Predefined PowerShell Script
+```
+
+En Linux, si el botón **Test** está disponible para la connection de tipo **Script**, puede utilizarse como validación adicional.
+
 ---
 
 ### 12.8 El servicio permanece detenido después de la prueba
@@ -2111,4 +2026,4 @@ Get-Service -Name <SERVICIO_WINDOWS>
 
 | Versión | Fecha | Descripción del cambio | Autor |
 |---|---|---|---|
-| 0.1 | `<AAAA-MM-DD>` | Creación inicial del manual técnico de taller. | `<Nombre del autor / equipo>` |
+| 0.1 | `2026-06-01>` | Ajustes para validación de Private Action Runner, PowerShell en Windows y troubleshooting de identidad local del runner. | `Olivel Cantoran` |
