@@ -47,27 +47,63 @@ El objetivo es que los participantes comprendan el flujo completo de implementac
 
 ## 2. Alcance
 
-Este manual cubre la implementación básica de Workflow Automation en Datadog para un caso práctico de remediación controlada de servicios en servidores Linux o Windows.
+Este manual cubre la implementación básica de Workflow Automation en Datadog para un caso práctico de detección y remediación controlada de servicios en servidores Linux o Windows.
+
+El taller contempla dos niveles de validación:
+
+1. **Flujo base de monitoreo y automatización**
+
+   * Instalación o reutilización del Datadog Agent.
+   * Validación de reporte del host en Datadog.
+   * Configuración del monitoreo de un servicio del sistema operativo.
+   * Creación de un monitor para detectar el servicio detenido.
+   * Creación de un workflow disparado por el monitor.
+   * Asociación del monitor con el workflow.
+   * Validación de que el workflow se ejecuta cuando el monitor entra en alerta.
+
+2. **Flujo de remediación local mediante Private Action Runner**
+
+   * Habilitación del Private Action Runner en el Datadog Agent.
+   * Validación de que el runner aparece disponible en Datadog.
+   * Creación o validación de una connection de tipo **Script**.
+   * Configuración de un script predefinido para iniciar el servicio seleccionado.
+   * Ejecución de la remediación desde Workflow Automation.
+   * Validación de que el servicio vuelve a estado operativo.
+
+> [!IMPORTANT]
+> Para ejecutar scripts locales desde Datadog Workflow Automation no basta con instalar el Datadog Agent.
+>
+> El host debe tener habilitado el **Private Action Runner**, el runner debe aparecer disponible en Datadog y debe estar asociado a una **connection** de tipo **Script**.
+>
+> En Windows, la remediación local se realizará mediante PowerShell utilizando la acción permitida `com.datadoghq.script.runPredefinedPowershellScript`.
+>
+> En Linux, la remediación local se realizará mediante script predefinido utilizando la acción permitida `com.datadoghq.script.runPredefinedScript`.
 
 El procedimiento contempla:
 
-- Uso de una cuenta de prueba u organización Datadog disponible.
-- Instalación básica del Datadog Agent.
-- Configuración del monitoreo de un servicio del sistema operativo.
-- Creación de un monitor para detectar el servicio detenido.
-- Creación de un workflow de remediación controlada.
-- Asociación del monitor con el workflow.
-- Validación del flujo completo de automatización.
-- Revisión básica del resultado de la ejecución.
+* Uso de una cuenta de prueba u organización Datadog disponible.
+* Instalación o reutilización del Datadog Agent.
+* Habilitación del Private Action Runner cuando se requiera remediación local.
+* Configuración del monitoreo de un servicio del sistema operativo.
+* Creación de un monitor para detectar el servicio detenido.
+* Creación de un workflow de remediación controlada.
+* Asociación del monitor con el workflow.
+* Configuración de una connection de tipo Script.
+* Validación del flujo completo de monitoreo, automatización y remediación.
+* Revisión básica del resultado de la ejecución.
 
 Este manual **no contempla**:
 
-- Implementaciones productivas avanzadas.
-- Diseño avanzado de dashboards, SLOs, logs, trazas o APM.
-- Automatizaciones complejas con aprobaciones, múltiples ramas o integraciones externas.
-- Administración completa de servicios Linux o Windows.
-- Troubleshooting profundo del Datadog Agent o de Workflow Automation.
-- Remediación sobre servicios críticos o productivos.
+* Implementaciones productivas avanzadas.
+* Diseño avanzado de dashboards, SLOs, logs, trazas o APM.
+* Automatizaciones complejas con aprobaciones, múltiples ramas o integraciones externas.
+* Administración completa de servicios Linux o Windows.
+* Troubleshooting profundo del Datadog Agent o de Workflow Automation fuera del caso práctico del taller.
+* Remediación sobre servicios críticos o productivos.
+* Uso de scripts dinámicos que permitan ejecutar cualquier comando recibido desde el workflow.
+
+> [!WARNING]
+> La remediación local debe limitarse a scripts predefinidos y controlados. No se recomienda permitir comandos amplios, parámetros libres o acciones que puedan modificar servicios no contemplados en el taller.
 
 > [!IMPORTANT]
 > El taller debe realizarse en un ambiente controlado. No se recomienda ejecutar la primera prueba sobre servidores productivos, servicios críticos o componentes necesarios para el acceso remoto al host.
@@ -76,16 +112,19 @@ Ruta resumida del taller:
 
 ```mermaid
 flowchart TD
-    A[Preparación previa al taller] --> B[Instalación del Datadog Agent]
-    B --> C[Validación de reporte en Datadog]
-    C --> D[Validación de rol y permisos]
-    D --> E[Selección del servicio de prueba]
-    E --> F[Configuración del monitoreo del servicio]
-    F --> G[Creación del monitor]
-    G --> H[Creación del workflow]
-    H --> I[Asociación del monitor con el workflow]
-    I --> J[Prueba de remediación]
-    J --> K[Validación del resultado]
+    A[Preparación previa al taller] --> B[Instalación o validación del Datadog Agent]
+    B --> C[Habilitación del Private Action Runner]
+    C --> D[Validación de reporte del host en Datadog]
+    D --> E[Validación de rol y permisos]
+    E --> F[Selección del servicio de prueba]
+    F --> G[Configuración del monitoreo del servicio]
+    G --> H[Creación del monitor]
+    H --> I[Configuración de script predefinido]
+    I --> J[Creación de connection tipo Script]
+    J --> K[Creación del workflow]
+    K --> L[Asociación del monitor con el workflow]
+    L --> M[Prueba de remediación]
+    M --> N[Validación del resultado]
 ```
 
 ---
@@ -213,6 +252,32 @@ Pasos generales:
 
 > [!IMPORTANT]
 > La API key debe tratarse como información sensible. No debe compartirse en repositorios públicos, capturas de pantalla, chats abiertos o documentación sin protección.
+
+### 3.2.1 Application Key para Private Action Runner
+
+Además de la API key del Datadog Agent, para usar **Private Action Runner** se requiere una **Application Key**.
+
+La diferencia es la siguiente:
+
+| Llave | Uso |
+|---|---|
+| API key | Permite que el Datadog Agent reporte información del host hacia Datadog. |
+| Application Key | Permite que el Private Action Runner se registre y pueda ejecutar acciones privadas desde Workflow Automation. |
+
+Durante la instalación del Agent, esta Application Key puede generarse automáticamente al habilitar la opción:
+
+```text
+Enable Agent to take action
+```
+
+> [!IMPORTANT]
+> No confundir la API key con la Application Key.
+>
+> Si el `app_key` no es válido, el Private Action Runner puede iniciar localmente, pero no aparecer como disponible en Datadog.
+
+> [!WARNING]
+> La API key y la Application Key deben tratarse como información sensible. No deben compartirse en capturas, repositorios o documentación sin protección.
+
 
 ### 3.3 Preparar workstation para el taller
 
@@ -482,9 +547,37 @@ Pasos generales:
 > [!WARNING]
 > El Private Action Runner solo debe permitir las acciones necesarias para el taller. No se recomienda habilitar acciones adicionales si no serán utilizadas durante la práctica.
 
+Validación adicional desde la workstation:
+
+#### Linux
+
+```bash
+sudo datadog-agent status | grep -A 10 -i "Private Action Runner"
+```
+
+#### Windows PowerShell
+
+```powershell
+& "C:\Program Files\Datadog\Datadog Agent\bin\agent.exe" status |
+Select-String -Pattern "Private Action Runner|URN|Self Enroll|Actions Allowlist|Remote Configuration" -Context 0,8
+```
+
+En Windows, también se puede revisar el log específico del runner:
+
+```powershell
+Get-Content "C:\ProgramData\Datadog\logs\private-action-runner.log" -Tail 100 |
+Select-String -Pattern "Private action runner starting|URN|runner_id|Keys manager ready|Starting loop|401|error validating JWT"
+```
+
+El resultado esperado es que el runner aparezca disponible en Datadog y que no se observen errores de autenticación como:
+
+```text
+401 error validating JWT
+```
+
 ---
 
-## 5. Validación de reporte y Private Action Runner
+## 5. Validación de reporte en Datadog
 
 En esta sección se validará que la workstation donde se instaló el Datadog Agent ya se encuentre reportando información hacia Datadog.
 
@@ -528,7 +621,44 @@ Pasos generales:
 > Después de instalar o reiniciar el Datadog Agent, la workstation puede tardar algunos minutos en aparecer en Datadog.
 
 > [!IMPORTANT]
-> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [13. Troubleshooting básico](#13-troubleshooting-básico).
+> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [12. Troubleshooting básico](#12-troubleshooting-básico).
+
+
+### 5.2 Validar Private Action Runner
+
+Después de confirmar que la workstation aparece en Datadog, validar que también exista el **Private Action Runner** asociado al Agent instalado.
+
+Desde la consola de Datadog:
+
+1. Presionar `Ctrl + K`.
+
+2. Buscar:
+
+   ```text
+   Private Action Runners
+   ```
+
+3. Entrar a **Private Action Runners**.
+
+4. Buscar el runner asociado a la workstation del taller.
+
+5. Abrir el detalle del runner.
+
+6. Confirmar que el runner aparece registrado.
+
+7. Confirmar que existe una connection asociada al runner.
+
+Para este taller, la connection que se utilizará posteriormente debe ser de tipo:
+
+```text
+Script
+```
+
+> [!NOTE]
+> En esta sección solo se valida que el Private Action Runner exista y que tenga una connection asociada. La ejecución real de la action se validará más adelante desde Workflow Automation.
+
+> [!IMPORTANT]
+> Si la workstation no aparece en Datadog, si el Agent muestra errores críticos o si el Private Action Runner no queda disponible, revisar la sección [12. Troubleshooting básico](#12-troubleshooting-básico).
 
 ---
 
