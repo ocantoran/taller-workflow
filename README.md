@@ -865,6 +865,14 @@ init_config:
 instances:
   - unit_names:
       - <SERVICIO_LINUX>
+    substate_status_mapping:
+      <SERVICIO_LINUX>:
+        running: ok
+        exited: critical
+        dead: critical
+        failed: critical
+        stopped: critical
+        unknown: critical
 ```
 
 Ejemplo:
@@ -875,6 +883,14 @@ init_config:
 instances:
   - unit_names:
       - cups.service
+    substate_status_mapping:
+      cups.service:
+        running: ok
+        exited: critical
+        dead: critical
+        failed: critical
+        stopped: critical
+        unknown: critical
 ```
 
 Reiniciar el Datadog Agent:
@@ -1075,9 +1091,19 @@ Selecciona la ruta correspondiente al sistema operativo:
 
 Editar el archivo de configuración de scripts del Private Action Runner:
 
+Antes de modificar el archivo, generar un respaldo:
+
+```bash
+sudo cp /etc/datadog-agent/private-action-runner/script-config.yaml /etc/datadog-agent/private-action-runner/script-config.yaml.bak-$(date +%Y%m%d-%H%M%S)
+
+Después, limpiar el contenido actual del archivo y reemplazarlo por la configuración del taller:
+
+
 ```bash
 sudo vi /etc/datadog-agent/private-action-runner/script-config.yaml
 ```
+
+Si el archivo contiene ejemplos como echo, helloWorld o scripts de prueba, eliminarlos para dejar únicamente el script que se utilizará en el taller.
 
 Agregar una configuración similar, reemplazando `<SERVICIO_LINUX>` por el servicio seleccionado:
 
@@ -1085,7 +1111,12 @@ Agregar una configuración similar, reemplazando `<SERVICIO_LINUX>` por el servi
 schemaId: script-credentials-v1
 runPredefinedScript:
   start_selected_service:
-    command: ["sudo", "systemctl", "start", "<SERVICIO_LINUX>"]
+    command:
+      - /bin/bash
+      - -c
+      - |
+        sudo /usr/bin/systemctl start <SERVICIO_LINUX> && echo "<SERVICIO_LINUX> iniciado correctamente"
+        /usr/bin/systemctl is-active <SERVICIO_LINUX>
 ```
 
 Ejemplo:
@@ -1094,7 +1125,13 @@ Ejemplo:
 schemaId: script-credentials-v1
 runPredefinedScript:
   start_selected_service:
-    command: ["sudo", "systemctl", "start", "cups.service"]
+    command:
+      - /bin/bash
+      - -c
+      - |
+        sudo /usr/bin/systemctl start cups.service && echo "cups.service iniciado correctamente"
+        /usr/bin/systemctl is-active cups.service
+
 ```
 
 Si el comando requiere privilegios, permitir únicamente el comando necesario para el usuario del Agent:
@@ -1224,19 +1261,25 @@ Esta connection será utilizada más adelante por la action del workflow para ej
 
 Desde la consola de Datadog:
 
-1. Ir a **Action Catalog**.
+1. Presionar `Ctrl + K`.
 
-2. Entrar a **Connections**.
+2. Buscar:
 
-3. Filtrar por la integración:
+   ```text
+   Connections
+   ```
+
+3. Entrar a **Connections** dentro de **Action Catalog**.
+
+4. Filtrar por la integración:
 
    ```text
    Script
    ```
 
-4. Confirmar que exista una connection de tipo **Script** asociada al Private Action Runner de la workstation.
+5. Confirmar que exista una connection de tipo **Script** asociada al Private Action Runner de la workstation.
 
-5. Validar que la connection esté vinculada al runner correcto.
+6. Validar que la connection esté vinculada al runner correcto.
 
 En Linux, si el botón **Test** está disponible, puede utilizarse como validación adicional.
 
@@ -1308,7 +1351,7 @@ Selecciona la ruta correspondiente al sistema operativo:
 
 1. Dar clic en el ícono **+** debajo del trigger **Monitor**.
 
-2. Seleccionar **Actions**.
+2. Seleccionar **All Actions**.
 
 3. En el buscador de actions, escribir:
 
@@ -1379,12 +1422,12 @@ Pasos generales:
 
 1. Dar clic en el ícono **+** debajo de la action de remediación.
 
-2. Seleccionar **Actions**.
+2. Seleccionar **All Actions**.
 
-3. Buscar una action de lógica, por ejemplo:
+3. Buscar una action de lógica:
 
    ```text
-   Wait
+   Sleep
    ```
 
 4. Seleccionar la action de espera.
@@ -1392,14 +1435,237 @@ Pasos generales:
 5. Configurar una espera de referencia:
 
    ```text
-   2 minutos
+   5 minutos
    ```
 
 El tiempo puede ajustarse según la frecuencia del check configurado en el Agent y el tiempo esperado para que el servicio vuelva a reportar estado correcto.
 
+
 ---
 
-### 9.7 Guardar y publicar el workflow
+### 9.7 Consultar nuevamente el estado del monitor
+
+Después de la espera, agregar una action para consultar nuevamente el estado del monitor.
+
+Pasos generales:
+
+1. Dar clic en el ícono **+** debajo de la action **Sleep**.
+
+2. Seleccionar **All Actions**.
+
+3. En el buscador de actions, escribir:
+
+   ```text
+   monitor
+   ```
+
+4. Buscar la action:
+
+   ```text
+   Get monitor
+   ```
+
+5. Seleccionar la action para consultar los detalles del monitor.
+
+6. Asignar un nombre al paso:
+
+   ```text
+   Recheck Monitor
+   ```
+
+7. Configurar el ID del monitor.
+
+   Para el taller se puede usar el ID del monitor creado para la prueba.
+
+   Si está disponible la variable del trigger, también se puede utilizar:
+
+   ```text
+   {{ Source.monitor.id }}
+   ```
+
+8. Guardar la configuración del paso.
+
+---
+
+### 9.8 Agregar condición de recuperación
+
+Después de consultar nuevamente el monitor, agregar una condición para validar si el monitor regresó a estado OK.
+
+Pasos generales:
+
+1. Dar clic en el ícono **+** debajo de **Recheck Monitor**.
+
+2. Seleccionar **All Actions**.
+
+3. Buscar y seleccionar la action de condición:
+
+   ```text
+   If condition
+   ```
+
+4. Asignar un nombre al paso:
+
+   ```text
+   Monitor Recovered Condition
+   ```
+
+5. Configurar la condición usando el resultado de **Recheck Monitor**:
+
+   **Statement**
+
+   ```text
+   {{ Steps.Recheck_Monitor.overall_state }}
+   ```
+
+   **Operator**
+
+   ```text
+   =
+   ```
+
+   **Value**
+
+   ```text
+   OK
+   ```
+
+6. Configurar dos ramas:
+
+   | Rama  | Resultado                                             |
+   | ----- | ----------------------------------------------------- |
+   | True  | El monitor regresó a OK.                              |
+   | False | El monitor no regresó a OK después de la remediación. |
+
+---
+
+### 9.9 Registrar el resultado en Notebook
+
+Después de la condición, agregar una actualización al Notebook para dejar evidencia del resultado del workflow.
+
+Para este taller se utilizará un Notebook existente como bitácora. El Notebook debe crearse una sola vez y después el workflow lo actualizará en cada ejecución.
+
+Crear el Notebook previamente desde Datadog:
+
+1. Presionar `Ctrl + K`.
+
+2. Buscar:
+
+   ```text
+   Notebooks
+   ```
+
+3. Crear un Notebook para el taller.
+
+   Nombre sugerido:
+
+   ```text
+   [Workshop] Workflow remediation log
+   ```
+
+4. Copiar el **Notebook ID**, ya que será utilizado en las actions de actualización.
+
+---
+
+#### 9.9.1 Agregar actualización de Notebook en la rama True
+
+En la rama **True**, agregar una action para registrar el resultado exitoso.
+
+Pasos generales:
+
+1. Dar clic en el ícono **+** de la rama **True**.
+
+2. Seleccionar **All Actions**.
+
+3. En el buscador de actions, escribir:
+
+   ```text
+   notebook
+   ```
+
+4. Seleccionar la action:
+
+   ```text
+   Update notebook
+   ```
+
+5. Asignar un nombre al paso:
+
+   ```text
+   Notebook Update Success
+   ```
+
+6. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
+
+7. En el contenido de la actualización, agregar una celda tipo Markdown con el siguiente contenido:
+
+   ```json
+   {
+     "attributes": {
+       "definition": {
+         "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation executed successfully and the monitor is now `OK`.\n",
+         "type": "markdown"
+       }
+     },
+     "type": "notebook_cells"
+   }
+   ```
+
+8. Guardar la configuración del paso.
+
+---
+
+#### 9.9.2 Agregar actualización de Notebook en la rama False
+
+En la rama **False**, agregar una action para registrar el resultado no exitoso.
+
+Pasos generales:
+
+1. Dar clic en el ícono **+** de la rama **False**.
+
+2. Seleccionar **All Actions**.
+
+3. En el buscador de actions, escribir:
+
+   ```text
+   notebook
+   ```
+
+4. Seleccionar la action:
+
+   ```text
+   Update notebook
+   ```
+
+5. Asignar un nombre al paso:
+
+   ```text
+   Notebook Update Failure
+   ```
+
+6. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
+
+7. En el contenido de la actualización, agregar una celda tipo Markdown con el siguiente contenido:
+
+   ```json
+   {
+     "attributes": {
+       "definition": {
+         "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation was executed, but the monitor did not return to `OK`. Manual review is required.\n",
+         "type": "markdown"
+       }
+     },
+     "type": "notebook_cells"
+   }
+   ```
+
+8. Guardar la configuración del paso.
+
+> [!NOTE]
+> El Notebook no ejecuta la remediación ni cambia el estado del monitor. Solo se utiliza para registrar evidencia del resultado del workflow.
+
+---
+
+### 9.10 Guardar y publicar el workflow
 
 Cuando el flujo esté completo:
 
@@ -1407,18 +1673,22 @@ Cuando el flujo esté completo:
 
 2. Confirmar que la action de remediación utilice la connection de tipo **Script**.
 
-3. Confirmar que se haya agregado una espera después de la remediación.
+3. Confirmar que exista una espera después de la remediación.
 
-4. Guardar el workflow.
+4. Confirmar que exista la consulta posterior del monitor.
 
-5. Publicar el workflow.
+5. Confirmar que exista la condición de recuperación.
+
+6. Confirmar que ambas ramas registren el resultado en el Notebook.
+
+7. Guardar el workflow.
+
+8. Publicar el workflow.
 
 > [!IMPORTANT]
 > El workflow debe estar publicado para poder ejecutarse automáticamente desde el monitor.
 
 Con esto, el workflow queda preparado para asociarse al monitor creado previamente.
-
-La validación de la recuperación del servicio y del estado del monitor se realizará en la sección 11.
 
 ---
 
