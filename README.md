@@ -1095,6 +1095,7 @@ Antes de modificar el archivo, generar un respaldo:
 
 ```bash
 sudo cp /etc/datadog-agent/private-action-runner/script-config.yaml /etc/datadog-agent/private-action-runner/script-config.yaml.bak-$(date +%Y%m%d-%H%M%S)
+```
 
 Después, limpiar el contenido actual del archivo y reemplazarlo por la configuración del taller:
 
@@ -1529,13 +1530,6 @@ Pasos generales:
    OK
    ```
 
-6. Configurar dos ramas:
-
-   | Rama  | Resultado                                             |
-   | ----- | ----------------------------------------------------- |
-   | True  | El monitor regresó a OK.                              |
-   | False | El monitor no regresó a OK después de la remediación. |
-
 ---
 
 ### 9.9 Registrar el resultado en Notebook
@@ -1566,53 +1560,65 @@ Crear el Notebook previamente desde Datadog:
 
 ---
 
-#### 9.9.1 Agregar actualización de Notebook en la rama True
+### 9.9.1 Agregar actualización de Notebook en la rama True
 
-En la rama **True**, agregar una action para registrar el resultado exitoso.
+En la rama **True**, agregar una action para registrar que la remediación fue exitosa y que el monitor regresó a estado `OK`.
 
-Pasos generales:
+Nombre sugerido para la action:
 
-1. Dar clic en el ícono **+** de la rama **True**.
+```text
+Notebook Update Success
+```
 
-2. Seleccionar **All Actions**.
+1. Configurar el **Timeframe** requerido por la action.
 
-3. En el buscador de actions, escribir:
-
-   ```text
-   notebook
-   ```
-
-4. Seleccionar la action:
+   Para el taller se puede usar:
 
    ```text
-   Update notebook
+   Last 1 hour
    ```
 
-5. Asignar un nombre al paso:
+2. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
+
+3. En el campo **Cells**, agregar una celda tipo Markdown con el siguiente contenido:
+
+```json
+[
+  {
+    "attributes": {
+      "definition": {
+        "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** {{ Steps.Recheck_Monitor.overall_state }}\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation executed successfully and the monitor is now OK.\n",
+        "type": "markdown"
+      }
+    },
+    "type": "notebook_cells"
+  }
+]
+```
+
+4. Configurar el campo obligatorio **Name**.
+
+   Puede colocarse el mismo nombre del Notebook utilizado para el taller:
 
    ```text
-   Notebook Update Success
+   [Workshop] Workflow remediation log
    ```
 
-6. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
+   También puede usarse una variable si el nombre viene de un paso anterior:
 
-7. En el contenido de la actualización, agregar una celda tipo Markdown con el siguiente contenido:
-
-   ```json
-   {
-     "attributes": {
-       "definition": {
-         "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation executed successfully and the monitor is now `OK`.\n",
-         "type": "markdown"
-       }
-     },
-     "type": "notebook_cells"
-   }
+   ```text
+   {{ Steps.Notebook_Start.name }}
    ```
 
-8. Guardar la configuración del paso.
+5. Mantener el campo **Status** como:
 
----
+   ```text
+   published
+   ```
+
+6. Guardar la configuración del paso.
+
+Con esta configuración, cuando la condición sea **True**, el workflow agregará una entrada al Notebook indicando que la remediación fue exitosa y que el monitor regresó a `OK`.
 
 #### 9.9.2 Agregar actualización de Notebook en la rama False
 
@@ -1642,26 +1648,53 @@ Pasos generales:
    Notebook Update Failure
    ```
 
-6. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
+6. Configurar el **Timeframe** requerido por la action.
 
-7. En el contenido de la actualización, agregar una celda tipo Markdown con el siguiente contenido:
+   Para el taller se puede usar:
 
-   ```json
-   {
-     "attributes": {
-       "definition": {
-         "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation was executed, but the monitor did not return to `OK`. Manual review is required.\n",
-         "type": "markdown"
-       }
-     },
-     "type": "notebook_cells"
-   }
+   ```text
+   Last 1 hour
    ```
 
-8. Guardar la configuración del paso.
+7. Configurar el **Notebook ID** correspondiente al Notebook creado para el taller.
 
-> [!NOTE]
-> El Notebook no ejecuta la remediación ni cambia el estado del monitor. Solo se utiliza para registrar evidencia del resultado del workflow.
+8. En el campo **Cells**, agregar una celda tipo Markdown con el siguiente contenido:
+
+   ```json
+   [
+     {
+       "attributes": {
+         "definition": {
+           "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation was executed, but the monitor did not return to `OK`. Manual review is required.\n",
+           "type": "markdown"
+         }
+       },
+       "type": "notebook_cells"
+     }
+   ]
+   ```
+
+9. Configurar el campo obligatorio **Name**.
+
+   Se puede usar el nombre del Notebook creado al inicio del flujo:
+
+   ```text
+   {{ Steps.Notebook_Start.name }}
+   ```
+
+   O colocar directamente el nombre del Notebook:
+
+   ```text
+   [Workshop] Workflow remediation log
+   ```
+
+10. Mantener el campo **Status** como:
+
+```text
+published
+```
+
+11. Guardar la configuración del paso.
 
 ---
 
