@@ -5,9 +5,9 @@
 | Campo                | Valor                                                                      |
 | -------------------- | -------------------------------------------------------------------------- |
 | Nombre del documento | Manual técnico de taller: Implementación de Workflow Automation en Datadog |
-| Versión              | 1.0                                                                        |
+| Versión              | 1.0.0                                                                      |
 | Estado               | Validado                                                                   |
-| Autor                | Olivel Cantoran / Equipo de Observabilidad                                 |
+| Autor                | Olivel Cantorán / Equipo de Monitoreo & Observabilidad                     |
 | Fecha                | 2026-06-03                                                                 |
 | Plataforma           | Datadog                                                                    |
 | Tipo de documento    | Manual técnico de taller                                                   |
@@ -2522,4 +2522,4 @@ No ejecutar este paso si se requiere conservar evidencia, logs o archivos de con
 
 | Versión | Fecha | Descripción del cambio | Autor |
 |---|---|---|---|
-| 0.1 | `2026-06-01>` | Ajustes para validación de Private Action Runner, PowerShell en Windows y troubleshooting de identidad local del runner. | `Olivel Cantoran` |
+| 1.0.0 | `2026-06-01>` | Ajustes para validación de Private Action Runner, PowerShell en Windows y troubleshooting de identidad local del runner. | `Olivel Cantorán` |
