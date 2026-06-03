@@ -1322,7 +1322,6 @@ Desde la consola de Datadog:
 
 3. Seleccionar **Workflow Automation** para abrir el módulo.
 
----
 
 ### 9.4 Crear workflow con Monitor Trigger
 
@@ -1349,7 +1348,6 @@ Dentro de **Workflow Automation**:
 > [!NOTE]
 > La asociación final entre el monitor y el workflow se realizará en la sección [10. Asociación del monitor con el workflow](#10-asociación-del-monitor-con-el-workflow).
 
----
 
 ### 9.5 Agregar action para ejecutar el script predefinido
 
@@ -1361,8 +1359,6 @@ Selecciona la ruta correspondiente al sistema operativo:
 |---|---|
 | Linux | [Run Predefined Script](#951-agregar-action-en-linux) |
 | Windows | [Run Predefined PowerShell Script](#952-agregar-action-en-windows) |
-
----
 
 #### 9.5.1 Agregar action en Linux
 
@@ -1393,8 +1389,6 @@ Selecciona la ruta correspondiente al sistema operativo:
    El nombre del script debe coincidir exactamente con el definido en el archivo de configuración.
 
 7. Guardar la configuración del paso.
-
----
 
 #### 9.5.2 Agregar action en Windows
 
@@ -1429,8 +1423,6 @@ Selecciona la ruta correspondiente al sistema operativo:
 > [!IMPORTANT]
 > Para este taller, el workflow solo debe ejecutar la remediación del servicio seleccionado. No se deben agregar acciones adicionales innecesarias.
 
----
-
 ### 9.6 Agregar espera después de la remediación
 
 Después de ejecutar la action de remediación, agregar una pausa para permitir que el servicio inicie y que el Agent reporte nuevamente el estado.
@@ -1456,9 +1448,6 @@ Pasos generales:
    ```
 
 El tiempo puede ajustarse según la frecuencia del check configurado en el Agent y el tiempo esperado para que el servicio vuelva a reportar estado correcto.
-
-
----
 
 ### 9.7 Consultar nuevamente el estado del monitor
 
@@ -1502,8 +1491,6 @@ Pasos generales:
 
 8. Guardar la configuración del paso.
 
----
-
 ### 9.8 Agregar condición de recuperación
 
 Después de consultar nuevamente el monitor, agregar una condición para validar si el monitor regresó a estado OK.
@@ -1546,8 +1533,6 @@ Pasos generales:
    OK
    ```
 
----
-
 ### 9.9 Registrar el resultado en Notebook
 
 Después de la condición, agregar una actualización al Notebook para dejar evidencia del resultado del workflow.
@@ -1573,8 +1558,6 @@ Crear el Notebook previamente desde Datadog:
    ```
 
 4. Copiar el **Notebook ID**, ya que será utilizado en las actions de actualización.
-
----
 
 ### 9.9.1 Agregar actualización de Notebook en la rama True
 
@@ -1636,7 +1619,7 @@ Notebook Update Success
 
 Con esta configuración, cuando la condición sea **True**, el workflow agregará una entrada al Notebook indicando que la remediación fue exitosa y que el monitor regresó a `OK`.
 
-#### 9.9.2 Agregar actualización de Notebook en la rama False
+### 9.9.2 Agregar actualización de Notebook en la rama False
 
 En la rama **False**, agregar una action para registrar el resultado no exitoso.
 
@@ -1712,8 +1695,6 @@ published
 
 11. Guardar la configuración del paso.
 
----
-
 ### 9.10 Guardar y publicar el workflow
 
 Cuando el flujo esté completo:
@@ -1748,8 +1729,6 @@ En esta sección se asociará el monitor creado previamente con el workflow de r
 > [!IMPORTANT]
 > El workflow debe estar publicado antes de asociarlo al monitor. Si el workflow no está publicado, no podrá ejecutarse automáticamente cuando el monitor entre en alerta.
 
----
-
 ### 10.1 Buscar el monitor
 
 Desde la consola de Datadog:
@@ -1770,8 +1749,6 @@ Desde la consola de Datadog:
 
 6. Seleccionar **Edit**.
 
----
-
 ### 10.2 Agregar workflow al monitor
 
 Dentro de la edición del monitor:
@@ -1788,8 +1765,6 @@ Dentro de la edición del monitor:
 
 > [!NOTE]
 > Si el workflow no aparece en la lista, validar que tenga configurado un **Monitor Trigger** y que se encuentre publicado.
-
----
 
 ### 10.3 Guardar y validar la asociación
 
@@ -1817,8 +1792,6 @@ En esta sección se validará el flujo completo: detener el servicio de prueba, 
 > [!IMPORTANT]
 > La prueba debe realizarse únicamente sobre el servicio de bajo impacto seleccionado para el taller.
 
----
-
 ### 11.1 Detener el servicio de prueba
 
 Selecciona la ruta correspondiente:
@@ -1827,8 +1800,6 @@ Selecciona la ruta correspondiente:
 | ----------------- | ------------------------------------------------- |
 | Linux             | [Ir a prueba en Linux](#1111-prueba-en-linux)     |
 | Windows           | [Ir a prueba en Windows](#1112-prueba-en-windows) |
-
----
 
 #### 11.1.1 Prueba en Linux
 
@@ -1853,8 +1824,6 @@ systemctl is-active cups.service
 > [!NOTE]
 > Reemplazar `cups.service` por el servicio seleccionado para el taller.
 
----
-
 #### 11.1.2 Prueba en Windows
 
 Detener el servicio seleccionado:
@@ -1871,8 +1840,6 @@ Get-Service -Name Spooler
 
 > [!NOTE]
 > Reemplazar `Spooler` por el servicio seleccionado para el taller.
-
----
 
 ### 11.2 Validar alerta del monitor
 
@@ -1898,8 +1865,6 @@ Desde Datadog:
 
 > [!NOTE]
 > El cambio de estado puede tardar algunos minutos, dependiendo del intervalo de recolección del Agent y de la configuración del monitor.
-
----
 
 ### 11.3 Validar ejecución del workflow
 
@@ -1928,8 +1893,6 @@ Desde Datadog:
 Dentro de la ejecución del workflow, revisar que las actions principales hayan finalizado correctamente.
 
 Si alguna action aparece con error, abrir el detalle de la action antes de repetir la prueba.
-
----
 
 ### 11.4 Validar estado final del servicio
 
@@ -1960,8 +1923,6 @@ El servicio debe regresar a estado `Running`.
 > [!NOTE]
 > Reemplazar `cups.service` o `Spooler` por el servicio seleccionado para el taller.
 
----
-
 ### 11.5 Validar recuperación del monitor
 
 Después de confirmar que el servicio volvió a estar activo, validar que el monitor también regrese a estado `OK`.
@@ -1985,8 +1946,6 @@ Desde Datadog:
 > [!NOTE]
 > La recuperación del monitor puede tardar algunos minutos, dependiendo de la frecuencia del check y de la evaluación configurada en el monitor.
 
----
-
 ### 11.6 Consideraciones si la remediación no funciona
 
 Si el servicio no se recupera, no repetir la prueba de forma indefinida.
@@ -2009,8 +1968,6 @@ Revisar en este orden:
 ## 12. Troubleshooting básico
 
 Esta sección contiene validaciones básicas para identificar problemas comunes durante el taller.
-
----
 
 ### 12.1 El Agent no inicia
 
@@ -2057,8 +2014,6 @@ Puntos a revisar:
 * Permisos del servicio del Agent.
 * Errores recientes en los logs del Agent.
 
----
-
 ### 12.2 El host no aparece en Datadog
 
 Validar que el Agent esté en ejecución y que no existan errores de conexión o autenticación.
@@ -2083,8 +2038,6 @@ Puntos a revisar:
 * Firewall, proxy o restricciones de red.
 * Tiempo de espera después de instalar o reiniciar el Agent.
 * Errores de autenticación o conexión en la salida del comando `status`.
-
----
 
 ### 12.3 El Private Action Runner no aparece o queda inactivo
 
@@ -2169,7 +2122,6 @@ Después de reiniciar el Agent, validar nuevamente que el runner aparezca en:
 ```text
 Private Action Runners
 ```
----
 
 ### 12.4 El servicio no reporta estado
 
@@ -2215,8 +2167,6 @@ Puntos a revisar:
 * El Agent fue reiniciado después del cambio.
 * El check `windows_service` se ejecuta sin errores críticos.
 
----
-
 ### 12.5 El monitor no cambia a alerta
 
 Si el servicio ya fue detenido pero el monitor no cambia de estado, revisar:
@@ -2235,8 +2185,6 @@ Checks esperados según el sistema operativo:
 Linux: systemd.unit.state
 Windows: windows_service.state
 ```
-
----
 
 ### 12.6 El workflow no se ejecuta
 
@@ -2267,8 +2215,6 @@ Desde Datadog:
 
 > [!NOTE]
 > Para este flujo no es necesario configurar manualmente variables como `host`, `service` o `status` al asociar el workflow, siempre que el workflow utilice el contexto del **Monitor Trigger**.
-
----
 
 ### 12.7 La remediación no funciona
 
@@ -2355,8 +2301,6 @@ Run Predefined PowerShell Script
 ```
 
 En Linux, si el botón **Test** está disponible para la connection de tipo **Script**, puede utilizarse como validación adicional.
-
----
 
 ### 12.8 El servicio permanece detenido después de la prueba
 
