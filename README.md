@@ -996,7 +996,7 @@ Desde Datadog:
 
 10. En el nombre del monitor, utilizar una estructura similar:
 ```text
-[Workshop] Servicio detenido - {{host.name}} - {{service.name}}
+[Workshop] Servicio detenido - {{host.name}} - {{windows_service.name}}
 ```
 
 10. En el mensaje del monitor, utilizar una estructura similar:
@@ -1006,7 +1006,7 @@ Desde Datadog:
 Se detectó que el servicio monitoreado se encuentra detenido.
 
 Host: {{host.name}}
-Servicio: {{service.name}}
+Servicio: {{windows_service.name}}
 Detalle: {{check_message}}
 
 Este monitor forma parte del taller de Datadog Workflow Automation.
@@ -1016,7 +1016,7 @@ Este monitor forma parte del taller de Datadog Workflow Automation.
 El servicio monitoreado volvió a estado OK.
 
 Host: {{host.name}}
-Servicio: {{service.name}}
+Servicio: {{windows_service.name}}
 Detalle: {{check_message}}
 {{/is_recovery}}
 ```
@@ -1161,11 +1161,26 @@ sudo systemctl restart datadog-agent
 
 #### 9.1.2 Configurar script predefinido en Windows
 
-Editar el archivo de configuración de scripts de PowerShell del Private Action Runner:
+Editar el archivo de configuración de scripts de PowerShell del Private Action Runner.
+
+Antes de modificar el archivo, generar un respaldo:
+
+```powershell
+$ConfigFile = "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
+$BackupFile = "$ConfigFile.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+
+if (Test-Path $ConfigFile) {
+    Copy-Item $ConfigFile $BackupFile -Force
+}
+```
+
+Después, abrir el archivo para reemplazar su contenido por la configuración del taller:
 
 ```powershell
 notepad "C:\ProgramData\Datadog\private-action-runner\powershell-script-config.yaml"
 ```
+
+Si el archivo contiene ejemplos como `helloWorld`, `greet`, `showEnv` o scripts de prueba, eliminarlos para dejar únicamente el script que se utilizará en el taller.
 
 
 Agregar una configuración similar, reemplazando `<SERVICIO_WINDOWS>` por el servicio seleccionado:
@@ -2401,7 +2416,11 @@ Stop-Service -Name datadogagent -Force
 
 #### 13.2.2 Remover permisos del servicio en Windows
 
-Si durante el taller se otorgaron permisos al usuario `ddagentuser` sobre un servicio Windows, restaurar el descriptor de seguridad respaldado.
+Si durante el taller se otorgaron permisos al usuario `ddagentuser` sobre un servicio Windows, se debe restaurar el descriptor de seguridad original del servicio.
+
+El descriptor de seguridad define qué usuarios pueden leer, iniciar, detener o modificar un servicio.
+
+Durante la configuración del taller se genera un respaldo del descriptor original. En esta sección se usa ese respaldo para dejar el servicio como estaba antes de la prueba.
 
 Ejemplo para `Spooler`:
 
