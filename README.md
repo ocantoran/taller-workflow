@@ -1585,13 +1585,13 @@ Notebook Update Success
 ```json
 [
   {
+    "type": "notebook_cells",
     "attributes": {
       "definition": {
-        "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** {{ Steps.Recheck_Monitor.overall_state }}\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation executed successfully and the monitor is now OK.\n",
-        "type": "markdown"
+        "type": "markdown",
+        "text": "## Workflow remediation report\n\nRemediation result: SUCCESS\n\nThe remediation was executed successfully and the monitor returned to OK."
       }
-    },
-    "type": "notebook_cells"
+    }
   }
 ]
 ```
@@ -1660,19 +1660,19 @@ Pasos generales:
 
 8. En el campo **Cells**, agregar una celda tipo Markdown con el siguiente contenido:
 
-   ```json
-   [
-     {
-       "attributes": {
-         "definition": {
-           "text": "## Workflow remediation report\n\n**Monitor:** {{ Source.monitor.name }}\n**Host:** {{ Source.monitor.event.host }}\n**Current state:** `{{ Steps.Recheck_Monitor.overall_state }}`\n**Timestamp:** {{ Source.monitor.event.date_happened }}\n\nAutomated remediation was executed, but the monitor did not return to `OK`. Manual review is required.\n",
-           "type": "markdown"
-         }
-       },
-       "type": "notebook_cells"
-     }
-   ]
-   ```
+```json
+[
+  {
+    "type": "notebook_cells",
+    "attributes": {
+      "definition": {
+        "type": "markdown",
+        "text": "## Workflow remediation report\n\nRemediation result: FAILED\n\nThe remediation was executed, but the monitor did not return to OK. Manual review is required."
+      }
+    }
+  }
+]   
+```
 
 9. Configurar el campo obligatorio **Name**.
 
