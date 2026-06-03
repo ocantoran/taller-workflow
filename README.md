@@ -2,15 +2,16 @@
 
 ## Control del documento
 
-| Campo | Valor |
-|---|---|
+| Campo                | Valor                                                                      |
+| -------------------- | -------------------------------------------------------------------------- |
 | Nombre del documento | Manual técnico de taller: Implementación de Workflow Automation en Datadog |
-| Versión | 0.1 |
-| Estado | Borrador |
-| Autor | `<Nombre del autor / equipo>` |
-| Fecha | `<AAAA-MM-DD>` |
-| Plataforma | Datadog |
-| Tipo de documento | Manual técnico de taller |
+| Versión              | 1.0                                                                        |
+| Estado               | Validado                                                                   |
+| Autor                | Olivel Cantoran / Equipo de Observabilidad                                 |
+| Fecha                | 2026-06-03                                                                 |
+| Plataforma           | Datadog                                                                    |
+| Tipo de documento    | Manual técnico de taller                                                   |
+
 
 ---
 
